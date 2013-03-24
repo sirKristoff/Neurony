@@ -1,0 +1,4 @@
+Neurony
+=======
+
+Sztuczne sieci neuronowe
