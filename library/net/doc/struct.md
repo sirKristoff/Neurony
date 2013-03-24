@@ -124,7 +124,7 @@ N[l=1]=4   |0,0 |1,0 |2,0 |    |0,1 |1,1 |2,1 |    |0,2 |1,2 |2,2 |    |0,3 |1,3
            +----+----+----+    +----+----+----+    +----+----+----+    +----+----+----+
 ______________________________________________________________________________________________
 
-L=3
+L=3                       - ilosc warstw sieci
 N[L+1] = {2,4,2,1};       - tablica rozmiaru neuronow w kazdej warstwie
                             N[0]  - ilosc wejsc sieci
                             N[l]  - ilosc neuronow w l-tej warstwie
@@ -132,7 +132,8 @@ N[L+1] = {2,4,2,1};       - tablica rozmiaru neuronow w kazdej warstwie
 CumN[L+1] = {0,4,6,7}     - tablica skumulowanych ilosci neuronow
                             CunN[2] - ilosc neuronow do warstwy 2 wlacznie
 
-A[7]                      - tablica wszystkich poziomow aktywacji neuronow
+A[7]                      - tablica odpowiedzi wszystkich neuronow
+f(a)                      - poziom aktywacji neuronu otrzymany z funkcji aktywacji
 W[25]                     - tablica wszystkich wag sieci
 
 nW[L+1] = {0,12,10,3}     - ilosc wag w warstwach
