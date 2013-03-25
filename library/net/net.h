@@ -124,7 +124,17 @@ public:
 	 * @note l C <1, L),  j C <0, nN[l]),  i C <0, nN[l-1]>
 	 */
 	Size
-	idx( Size l, Size j, Size i );
+	idxW( Size l, Size j, Size i )  const;
+
+	/**
+	 * @brief Indeks j-tego neuronu w l-tej warstwie
+	 * @param l  numer warstwy
+	 * @param j  numer neuronu w warstwie
+	 *
+	 * @note l C <1, L),  j C <0, nN[l]),
+	 */
+	Size
+	idxA( Size l, Size j )  const;
 
 //private:
 

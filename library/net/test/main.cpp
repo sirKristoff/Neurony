@@ -58,12 +58,12 @@ void printCumW()
 /** indeksy wag */
 void testIdx()
 {
-	LOG_IO( LINE << "Net idx(l,j,i):\n");
+	LOG_IO( LINE << "Net idxW(l,j,i):\n");
 	for( Size l= 1 ; l<net.nN.size() ; ++l ){
 		for( Size j= 0 ; j<net.nN[l] ; ++j ){
 			LOG_IO( "(" << l << "," << j << ",i): ");
 			for( Size i= 0 ; i<=net.nN[l-1] ; ++i )
-				LOG_IO( net.idx(l,j,i) << " ");
+				LOG_IO( net.idxW(l,j,i) << " ");
 			LOG_IO(endl);
 		}
 		LOG_IO( endl );
@@ -78,7 +78,7 @@ void printW()
 		for( Size j= 0 ; j<net.nN[l] ; ++j ){
 			LOG_IO( "(" << l << "," << j << ",i): ");
 			for( Size i= 0 ; i<=net.nN[l-1] ; ++i )
-				LOG_IO( net.mW[ net.idx(l,j,i) ] << " ");
+				LOG_IO( net.mW[ net.idxW(l,j,i) ] << " ");
 			LOG_IO(endl);
 		}
 		LOG_IO(endl);
@@ -164,6 +164,36 @@ void learnState()
 			<< endl );
 }
 
+void printA()
+{
+	Input tmpX[nIn]= {2.0,4.0};  // wejscie
+	vector<Input> x(tmpX,tmpX+nIn);
+	net.y(x);
+
+	LOG_IO( LINE << "A:\n" );
+
+	LOG_IO("x:   ");
+	LOG_IO( (net.fLockBias==Net::lbLock ? 0 : 1) << " ");
+	FOR_EACH(i,x.size(),
+			 LOG_IO( x[i] << " "););
+	LOG_IO(endl);
+
+	LOG_IO( "nCumN(l):  ");
+	FOR_EACH(l,net.nCumN.size(),\
+			 LOG_IO( net.nCumN[l] << " " ));
+	LOG_IO(endl);
+
+	LOG_IO( "mA(l,j):\n");
+	for( Size l= 1 ; l<net.nN.size() ; ++l ){
+		LOG_IO( "(" << l << ",j): ");
+		for( Size j= 0 ; j<net.nN[l] ; ++j ){
+			LOG_IO( net.mA[ net.idxA(l,j) ] << " ");
+		}
+		LOG_IO(endl);
+	}
+
+}
+
 //*****************************************************************************
 int main()
 {
@@ -173,6 +203,7 @@ int main()
 	printcumN(); // 0 4 6 7
 	printCumW(); // 0 12 22 25
 	printW();
+	printA();
 
 	testIdx();
 

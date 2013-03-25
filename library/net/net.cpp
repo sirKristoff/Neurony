@@ -100,6 +100,8 @@ Net::y( const vector<Input>& x, Size l )
 {
 	vector<Input> out(nN[l], Input());
 
+	// TODO: wykonac obliczenia dla calej warstwy bez funkcji a(x,l,j)
+	// TODO: ograniczyc ilosc wywolan funkcji wyliczajacych indeksy
 	for( size_t j= 0 ; j<nN[l] ; ++j)
 		out[j] = (mFun[l])( a(x,l,j) );
 
@@ -141,6 +143,8 @@ Net::a( const vector<Input>& x, Size l )
 
 	vector<Input> out(nN[l], Input());
 
+	// TODO: wykonac obliczenia dla calej warstwy bez funkcji a(x,l,j)
+	// TODO: ograniczyc ilosc wywolan funkcji wyliczajacych indeksy
 	for( size_t j= 0 ; j<nN[l] ; ++j)
 		out[j] = a(x,l,j);
 
@@ -169,14 +173,14 @@ Net::a( const vector<Input> &x, Size l, Size j )
 		throw range_error("Net::a(vector<Input>,Size,Size): Dlugosc wektora nie zgadza sie z iloscia wejsc neuronu");
 #endif
 
-//	Input out= mW[idx(l,j,0)];
-//	for( size_t i= 1 ; i<=nN[l-1] ; ++i ){
-//		out += mW[idx(l,j,i)] * x[i-1];
-//	}
-//	return (out);
-	const Size index0= idx(l,j,0);
-	return  inner_product( &mW[index0+1], &mW[index0+1+nN[l-1]], x.begin(),
-			(fLockBias==lbLock ? Weight(0) : mW[index0]) );
+	const Size index0= idxW(l,j,0);
+	Input ret= inner_product( &mW[index0+1], &mW[index0+1+nN[l-1]], x.begin(),
+			(fLockBias==lbLock ? Weight(0) : mW[index0]) );  // iloczyn skalarny wejscia z wagami
+
+	if( fLearningState == lsUnlearned )  // siec w trakcie nauki
+		mA[ idxA(l,j) ] = ret;
+
+	return (ret);
 }
 
 
@@ -216,7 +220,7 @@ Net::unlearnedState()
 	}
 }
 
-//*** idx **********************************************************************
+//*** idxW *********************************************************************
 /**
  * @brief Indeks i-tej wagi w j-tym neuronie l-tej warstwy
  * @param l  numer warstwy
@@ -226,15 +230,15 @@ Net::unlearnedState()
  * @note l C <1, L),  j C <0, nN[l]),  i C <0, nN[l-1]>
  */
 Size
-Net::idx( Size l, Size j, Size i )
+Net::idxW( Size l, Size j, Size i )  const
 {
 #ifdef DEBUG
 //	if( l<=0 || nN.size()<=l || j<0 || nN[l]<=j || i<0 || nN[l-1]<=i )
 	if( l==0 || nN.size()<=l || nN[l]<=j || nN[l-1]<i )
-		throw domain_error("Net::idx(Size,Size,Size): zly parametr metody");
+		throw domain_error("Net::idxW(Size,Size,Size): zly parametr metody");
 
 	if( nCumW.back() <= ( nCumW[l-1] + j*( nN[l-1]+1 ) + i ) )
-		throw out_of_range("Net::idx(Size,Size,Size): zla wartosc zwracana");
+		throw out_of_range("Net::idxW(Size,Size,Size): zla wartosc zwracana");
 #endif
 
 	//       \/ ile wag we wszystkich poprzednich warstwach
@@ -242,6 +246,27 @@ Net::idx( Size l, Size j, Size i )
 	return ( nCumW[l-1] + j*( nN[l-1]+1 ) + i );
 }
 
+//*** idxA *********************************************************************
+/**
+ * @brief Indeks j-tego neuronu w l-tej warstwie
+ * @param l  numer warstwy
+ * @param j  numer neuronu w warstwie
+ *
+ * @note l C <1, L),  j C <0, nN[l]),
+ */
+Size
+Net::idxA( Size l, Size j )  const
+{
+#ifdef DEBUG
+	if( l==0 || nN.size()<=l || nN[l]<=j )
+		throw domain_error("Net::idxA(Size,Size): zly parametr metody");
+
+	if( nCumN.back() <= (nCumN[l-1] + j) )
+		throw out_of_range("Net::idxA(Size,Size): zla wartosc zwracana");
+#endif
+
+	return  (nCumN[l-1] + j);
+}
 
 //*** calculateCumW ************************************************************
 vector<Size>
