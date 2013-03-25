@@ -24,13 +24,16 @@ Weight rand(){
  * @param N  Ilosci neuronow w kolejnych warstwach
  */
 Net::Net(const vector<Size>& N, LockBias lockBias)
-	: nN(N), mFun(N.size(), ::ident), mDif(N.size(), ::d_ident),
-	  fLockBias(lockBias)
+	: nN(N), mA(NULL), mFun(N.size(), ::ident), mDif(N.size(), ::d_ident),
+	  fLockBias(lockBias), fLearningState(lsLearned)
 {
+	nCumN = Net::calculateCumN(N);
 	nCumW = Net::calculateCumW(N);
-	mW = new Weight[ nCumW.back() ];
 
-	generate(&mW[0], &mW[nCumW.back()], my::rand);
+	mW = new Weight[ nCumW.back() ];
+	std::generate(&mW[0], &mW[nCumW.back()], my::rand);
+
+	this->unlearnedState();  // zarezerwuj pamiec dla mA
 
 	mFun[0] = NULL;
 	mDif[0] = NULL;
@@ -39,19 +42,22 @@ Net::Net(const vector<Size>& N, LockBias lockBias)
 //*** Net **********************************************************************
 Net::Net(const vector<Size>& N , const vector<Fun> &fun, const vector<Dif> &dif,
 		 LockBias lockBias)
-	: nN(N), mFun(fun), mDif(dif), fLockBias(lockBias)
+	: nN(N), mA(NULL), mFun(fun), mDif(dif), fLockBias(lockBias),
+	  fLearningState(lsLearned)
 {
 #ifdef DEBUG
 	if( N.size() != fun.size()+1  ||  N.size() != dif.size()+1 )
 		throw range_error("Net::Net(vector<Size>,vector<Fun>,vector<Dif>): Zla ilosc funkcji aktywacji");
 #endif
 
+	nCumN = Net::calculateCumN(N);
 	nCumW = Net::calculateCumW(N);
 	mW = new Weight[ nCumW.back() ];
+	std::generate(&mW[0], &mW[nCumW.back()], my::rand);
 
-	generate(&mW[0], &mW[nCumW.back()], my::rand);
+	this->unlearnedState();  // zarezerwuj pamiec dla mA
 
-	mFun.insert(mFun.begin(),NULL);
+	mFun.insert(mFun.begin(),NULL);  // mFun nie ma funkcji pod indeksem 0
 	mDif.insert(mDif.begin(),NULL);
 }
 
@@ -59,6 +65,7 @@ Net::Net(const vector<Size>& N , const vector<Fun> &fun, const vector<Dif> &dif,
 Net::~Net()
 {
 	delete[] mW;
+	this->learnedState();  // ewentualnie zwolni pamiec mA
 }
 
 
@@ -173,6 +180,42 @@ Net::a( const vector<Input> &x, Size l, Size j )
 }
 
 
+//*** learnedState *************************************************************
+void
+Net::learnedState()
+{
+#ifdef DEBUG
+	if( fLearningState == lsUnlearned  &&  mA == NULL )
+		throw logic_error("Net::learnedState(): siec nie nauczona a pamiec dla 'A' zwolniona!");
+#endif
+
+	if( fLearningState == lsUnlearned ){
+		delete[] mA;
+		fLearningState = lsLearned;
+#ifdef DEBUG
+		mA = NULL;
+#endif
+	}
+}
+
+
+//*** unlearnedState ***********************************************************
+void
+Net::unlearnedState()
+{
+#ifdef DEBUG
+	if( nCumW.empty() )
+		throw logic_error("Net::unlearnedState(): nie obliczono skumulowanej ilosci neuronow");
+	if( fLearningState == lsLearned  &&  mA != NULL )
+		throw logic_error("Net::unlearnedState(): siec nauczona a pamiec dla 'A' zarezerwowana!");
+#endif
+
+	if( fLearningState == lsLearned ){
+		mA = new Input[ nCumN.back() ]; // skumulowana ilosc neuronow
+		fLearningState = lsUnlearned;
+	}
+}
+
 //*** idx **********************************************************************
 /**
  * @brief Indeks i-tej wagi w j-tym neuronie l-tej warstwy
@@ -202,21 +245,37 @@ Net::idx( Size l, Size j, Size i )
 
 //*** calculateCumW ************************************************************
 vector<Size>
-Net::calculateCumW( const vector<Size>& nN_ )
+Net::calculateCumW(const vector<Size>& N )
 {
 #ifdef DEBUG
-	if( nN_.empty() )
+	if( N.empty() )
 		throw invalid_argument("Net::calculateCumW(vector<Size>): Pusty wektor");
 #endif
 
-	vector<Size> sumW(nN_.size()); // suma ilosci wag neuronow w konkretnej warstwie
-	vector<Size> cumW(nN_.size()); // skumulowana suma ilosci wag
+	vector<Size> sumW(N.size()); // suma ilosci wag neuronow w konkretnej warstwie
+	vector<Size> cumW(N.size()); // skumulowana suma ilosci wag
 
 	for( size_t i= 1 ; i<sumW.size() ; ++i ){
-		sumW[i] = ( nN_[i-1]+1 ) * nN_[i];
+		sumW[i] = ( N[i-1]+1 ) * N[i];
 	}
 
-	std::partial_sum( sumW.begin(), sumW.end(), cumW.begin() );
+	std::partial_sum( sumW.begin(), sumW.end(), cumW.begin() );  // skumulowana suma z sumW
 
 	return (cumW);
+}
+
+//*** calculateCumN ************************************************************
+vector<Size>
+Net::calculateCumN( const vector<Size>& N )
+{
+#ifdef DEBUG
+	if( N.empty() )
+		throw invalid_argument("Net::calculateCumN(vector<Size>): Pusty wektor");
+#endif
+
+	vector<Size> cumN(N.size(), Size(0));
+
+	std::partial_sum( N.begin()+1, N.end(), cumN.begin()+1 );  // skumulowana suma z N
+
+	return (cumN);
 }

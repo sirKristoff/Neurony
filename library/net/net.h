@@ -22,6 +22,15 @@ public:
 		} LockBias;
 
 	/**
+	 * @brief Stan uczenia sieci
+	 * @note  Mozliwe wartosci dla pola fLearningState
+	 */
+	typedef enum{
+		lsLearned = 0,
+		lsUnlearned = 1
+		} LearningState;
+
+	/**
 	 * @brief Net
 	 * @param N  Ilosci neuronow w kolejnych warstwach - N.size() == L+1
 	 * @param lockBias  Znacznik zablokowania biasu
@@ -90,6 +99,20 @@ public:
 	Input
 	a( const vector<Input>& x, Size l, Size j );
 
+	void
+	lockBias()
+	{  fLockBias = lbLock;  }
+
+	void
+	unlockBias()
+	{  fLockBias = lbUnlock;  }
+
+	void
+	learnedState();
+
+	void
+	unlearnedState();
+
 //protected:
 
 	/**
@@ -106,18 +129,28 @@ public:
 //private:
 
 	static vector<Size>
-	calculateCumW( const vector<Size>& nN_ );
+	calculateCumW( const vector<Size>& N );
+
+	static vector<Size>
+	calculateCumN( const vector<Size>& N );
 
 //protected:
 
 	vector<Size>  nN;     /*!< Ilosci neuronow w kolejnych warstwach - L razem z warstwa zerowa*/
+	vector<Size>  nCumN;  /*!< Skumulowane ilosci neuronow we wszystkich poprzedzajacych warstwach */
 	vector<Size>  nCumW;  /*!< Sumy ilosci wag w neuronach kumulujac kolejne warstwy */
 	Weight*  mW;          /*!< Wagi calej sieci neuronowej (wagi z pierwszych warstw na poczatku */
+	Input*  mA;           /*!< Odpowiedzi wszystkich neuronow sieci */
 	vector<Fun> mFun;     /*!< Funkcje aktywacji dla kazdej warstwy */
 	vector<Dif> mDif;     /*!< Pochodne funkcji aktywacji */
 
-	LockBias fLockBias;       /*!< flaga zablokowana biasu: zablokowany ma wartosc zero i jego waga sie nie zmienia */
+	LockBias fLockBias;   /*!< flaga zablokowana biasu: zablokowany ma wartosc zero i jego waga sie nie zmienia */
+	LearningState fLearningState;  /*!< flaga stanu uczenia sie sieci: nauczona siec nie zmienia swoich wag */
 
+private:
+
+	Net( const Net& src );
+	Net& operator=( const Net& lhs );
 };
 
 #endif // NET_H

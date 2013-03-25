@@ -126,12 +126,51 @@ void printOdpowiedz()
 	LOG_IO( "y(x) = " << net.y(x).front() << endl);
 }
 
+void printcumN()
+{
+	const vector<Size> N(l,l+L+1);
+	vector<Size> cum= Net::calculateCumN( N );
+
+	LOG_IO( LINE << "Skumulowana ilosc neuronow\n" );
+	LOG_IO( "static CumN(l):  ");
+	FOR_EACH(l,cum.size(),\
+			 LOG_IO( cum[l] << " " ));
+	LOG_IO(endl);
+
+	LOG_IO( "nCumN(l):        ");
+	FOR_EACH(l,net.nCumN.size(),\
+			 LOG_IO( net.nCumN[l] << " " ));
+	LOG_IO(endl);
+}
+
+void learnState()
+{
+	LOG_IO( LINE << "LearningState\n" );
+	LOG_IO( "fLearningState= "
+			<< (net.fLearningState==Net::lsLearned ? "lsLearned" : "lsUnlearned")
+			<< endl );
+
+//	net.fLearningState= Net::lsLearned;
+	LOG( net.learnedState() );
+	LOG_IO( "  turn learnedState()" << endl );
+	LOG_IO( "fLearningState= "
+			<< (net.fLearningState==Net::lsLearned ? "lsLearned" : "lsUnlearned")
+			<< endl );
+
+	LOG( net.unlearnedState() );
+	LOG_IO( "  turn unlearnedState()" << endl );
+	LOG_IO( "fLearningState= "
+			<< (net.fLearningState==Net::lsLearned ? "lsLearned" : "lsUnlearned")
+			<< endl );
+}
+
 //*****************************************************************************
 int main()
 {
 //	srand(time(0));
 
 	printN();    // 2 4 2 1
+	printcumN(); // 0 4 6 7
 	printCumW(); // 0 12 22 25
 	printW();
 
@@ -142,6 +181,8 @@ int main()
 	printOdpowiedz();
 
 	testFun();
+
+	learnState();
 
 	return 0;
 }
