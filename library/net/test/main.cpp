@@ -1,8 +1,6 @@
 #include <iostream>
 #include <time.h>
 #include <stdlib.h>
-#include <string>
-#include <fstream>
 
 #include "./../definitions.h"
 #include "./../funs.h"
@@ -35,7 +33,8 @@ const Size l[L+1] = {nIn,4,2,1};
 const Fun f[L] = {ident,uni_sigm,bi_sigm};
 const Dif df[L] = {d_ident,d_uni_sigm,d_bi_sigm};
 
-Net net(vector<Size>(l,l+L+1), vector<Fun>(f,f+L), vector<Dif>(df,df+L));
+Net net(vector<Size>(l,l+L+1), vector<Fun>(f,f+L), vector<Dif>(df,df+L),
+		Net::lbLock );
 
 //*****************************************************************************
 /** rozmiary warstw */
@@ -89,12 +88,13 @@ void printW()
 /** odpowiedz sieci */
 void a()
 {
+
 	Input tmpX[nIn]= {2.0,4.0};  // wejscie
 	vector<Input> x(tmpX,tmpX+nIn);
 
-	LOG_IO( LINE << "Wyjscia neuronow pierwszej warstwy:\n" );
+	LOG_IO( LINE << "Odpowiedzi neuronow pierwszej warstwy:\n" );
 	LOG_IO("x:   ");
-	LOG_IO("1 ");
+	LOG_IO( (net.fLockBias==Net::lbLock ? 0 : 1) << " ");
 	FOR_EACH(i,x.size(),
 			 LOG_IO( x[i] << " "););
 	LOG_IO(endl);
@@ -129,6 +129,7 @@ void printOdpowiedz()
 //*****************************************************************************
 int main()
 {
+//	srand(time(0));
 
 	printN();    // 2 4 2 1
 	printCumW(); // 0 12 22 25

@@ -13,8 +13,8 @@ using namespace std;
 
 namespace my{
 Weight rand(){
-//	return ::rand()%2;
-	return Weight(::rand())/RAND_MAX -0.5;
+	return ::rand()%2;
+//	return Weight(::rand())/RAND_MAX -0.5;
 }
 }
 
@@ -23,8 +23,9 @@ Weight rand(){
  * @brief Net
  * @param N  Ilosci neuronow w kolejnych warstwach
  */
-Net::Net(const vector<Size>& N)
-	: nN(N), mFun(N.size(), ::ident), mDif(N.size(), ::d_ident)
+Net::Net(const vector<Size>& N, LockBias lockBias)
+	: nN(N), mFun(N.size(), ::ident), mDif(N.size(), ::d_ident),
+	  fLockBias(lockBias)
 {
 	nCumW = Net::calculateCumW(N);
 	mW = new Weight[ nCumW.back() ];
@@ -36,8 +37,9 @@ Net::Net(const vector<Size>& N)
 }
 
 //*** Net **********************************************************************
-Net::Net(const vector<Size>& N , const vector<Fun> &fun, const vector<Dif> &dif)
-	: nN(N), mFun(fun), mDif(dif)
+Net::Net(const vector<Size>& N , const vector<Fun> &fun, const vector<Dif> &dif,
+		 LockBias lockBias)
+	: nN(N), mFun(fun), mDif(dif), fLockBias(lockBias)
 {
 #ifdef DEBUG
 	if( N.size() != fun.size()+1  ||  N.size() != dif.size()+1 )
@@ -62,7 +64,7 @@ Net::~Net()
 
 //*** y ************************************************************************
 /**
- * @brief Odpowiedz sieci neuronowej
+ * @brief Wyjscie sieci neuronowej
  * @param x  wejscie pierwszej warstwy
  * @return Poziom aktywacji wszystkich neuronow w warstwie wyjsciowej
  */
@@ -80,10 +82,11 @@ Net::y( const vector<Input>& x )
 
 //*** y ************************************************************************
 /**
- * @brief Odpowiedz l-tej warstwy, ktore jest wejsciem dla warstwy l+1
+ * @brief Wyjscie l-tej warstwy, ktore jest wejsciem dla warstwy l+1
  * @param x  wejscie warstwy
  * @param l  numer warstwy sieci
  * @return Poziom aktywacji wszystkich neuronow w warstwie
+ * @note l C <1, L)
  */
 vector<Input>
 Net::y( const vector<Input>& x, Size l )
@@ -98,11 +101,12 @@ Net::y( const vector<Input>& x, Size l )
 
 //*** y ************************************************************************
 /**
- * @brief Odpowiedz j-tego neuronu w l-tej warstwie
+ * @brief Wyjscie j-tego neuronu w l-tej warstwie
  * @param x  wejscie neuronu
  * @param l  numer warstwy sieci
  * @param j  numer neuronu w warstwie
  * @return Poziom aktywacji neuronu
+ * @note l C <1, L),  j C <0, nN[l])
  */
 Input
 Net::y( const vector<Input>& x, Size l, Size j )
@@ -112,10 +116,11 @@ Net::y( const vector<Input>& x, Size l, Size j )
 
 //*** a ************************************************************************
 /**
- * @brief Wyjscie l-tej warstwy, ktore jest wejsciem dla warstwy l+1
+ * @brief Odpowiedz l-tej warstwy, ktore jest wejsciem dla funkcji aktywacji warstwy l+1
  * @param x  wejscie warstwy
  * @param l  numer warstwy sieci
- * @return Wyjscia wszystkich neuronow w warstwie
+ * @return Odpowiedzi wszystkich neuronow w warstwie
+ * @note l C <1, L)
  */
 vector<Input>
 Net::a( const vector<Input>& x, Size l )
@@ -143,6 +148,7 @@ Net::a( const vector<Input>& x, Size l )
  * @param l  numer warstwy sieci
  * @param j  numer neuronu w warstwie
  * @return Iloczyn wag neuronu i jego wejscia
+ * @note l C <1, L),  j C <0, nN[l])
  */
 Input
 Net::a( const vector<Input> &x, Size l, Size j )
@@ -162,7 +168,8 @@ Net::a( const vector<Input> &x, Size l, Size j )
 //	}
 //	return (out);
 	const Size index0= idx(l,j,0);
-	return  inner_product( &mW[index0+1], &mW[index0+1+nN[l-1]], x.begin(), mW[index0] );
+	return  inner_product( &mW[index0+1], &mW[index0+1+nN[l-1]], x.begin(),
+			(fLockBias==lbLock ? Weight(0) : mW[index0]) );
 }
 
 

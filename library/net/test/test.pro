@@ -12,6 +12,6 @@ SOURCES += main.cpp \
 	../funs.cpp
 
 
-HEADERS += ../zad_2_0/definitions.h \
+HEADERS += ../definitions.h \
 	../net.h \
 	../funs.h
