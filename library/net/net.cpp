@@ -69,6 +69,30 @@ Net::~Net()
 }
 
 
+//*** e ************************************************************************
+/**
+ * @brief Blad sieci wzgledem wzorca
+ * @param u  wzorcowe wejscie
+ * @param v  wzorcowe wyjscie
+ * @return  Srednie odchylenie wyjscia sieci od wzorcowego wyjscia
+ */
+Input
+Net::e( const vector<Input>& u, const vector<Input>& v )
+{
+	vector<Input> out= this->y( u );
+	Input ret= Input(0);
+
+	for( size_t i= 0 ; i<out.size() ; ++i ){
+#ifdef DEBUG
+		ret += ( out.at(i) - v.at(i) ) * ( out.at(i) - v.at(i) );
+#else
+		ret += ( out[i] - v[i] ) * ( out[i] - v[i] );
+#endif
+	}
+
+	return (ret / out.size());
+}
+
 //*** y ************************************************************************
 /**
  * @brief Wyjscie sieci neuronowej

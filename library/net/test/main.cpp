@@ -194,6 +194,33 @@ void printA()
 
 }
 
+void error()
+{
+	Input tmpX[nIn]= {2.0,4.0};  // wejscie
+	vector<Input> u(tmpX,tmpX+nIn);
+	vector<Input> v(1,Input(1));
+	vector<Input> y= net.y(u);
+
+	LOG_IO( LINE << "Blad sieci" << endl );
+
+	LOG_IO("u:   ");
+	FOR_EACH(i,u.size(),
+			 LOG_IO( u[i] << " "););
+	LOG_IO(endl);
+
+	LOG_IO("v:   ");
+	FOR_EACH(i,v.size(),
+			 LOG_IO( v[i] << " "););
+	LOG_IO(endl);
+
+	LOG_IO("y:   ");
+	FOR_EACH(i,y.size(),
+			 LOG_IO( y[i] << " "););
+	LOG_IO(endl);
+
+	LOG_IO("err: " << net.e(u,v) << endl);
+}
+
 //*****************************************************************************
 int main()
 {
@@ -205,6 +232,8 @@ int main()
 	printW();
 	printA();
 
+	error();  // 0.289337
+
 	testIdx();
 
 	a();
@@ -214,6 +243,7 @@ int main()
 	testFun();
 
 	learnState();
+
 
 	return 0;
 }

@@ -49,6 +49,16 @@ public:
 
 
 	/**
+	 * @brief Blad sieci wzgledem wzorca
+	 * @param u  wzorcowe wejscie
+	 * @param v  wzorcowe wyjscie
+	 * @return  Srednie odchylenie wyjscia sieci od wzorcowego wyjscia
+	 */
+	Input
+	e( const vector<Input>& u, const vector<Input>& v );
+
+
+	/**
 	 * @brief Wyjscie sieci neuronowej
 	 * @param x  wejscie pierwszej warstwy
 	 * @return Poziom aktywacji wszystkich neuronow w warstwie wyjsciowej
