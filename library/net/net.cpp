@@ -11,6 +11,8 @@ using namespace std;
 #include "net.h"
 
 
+Input Net::sNi= -0.1;
+
 namespace my{
 Weight rand(){
 	return ::rand()%2;
@@ -66,6 +68,41 @@ Net::~Net()
 {
 	delete[] mW;
 	this->learnedState();  // ewentualnie zwolni pamiec mA
+}
+
+
+
+//*** example ******************************************************************
+/**
+ * @brief Uczenie na jednym przykladzie
+ * @param u  wzorcowe wejscie
+ * @param v  wzorcowe wyjscie
+ */
+void
+Net::example( const vector<Input>& u, const vector<Input>& v )
+{
+	vector<Input>  B( nCumN.back(), Input(0) ); // wartosci b^l_j dla kazdego neuronu
+
+	this->unlearnedState();  // wlaczamy nauke
+	vector<Input> y_ = this->y(u);  // obliczamy odpowiedzi neuronow
+
+	Size L= nN.size()-1;
+	Size iA;
+	// dla ostatniej warstwy L
+	for( Size j= 0 ; j<nN.back() ; ++j ){
+		iA = idxA(L,j);  // indeks wyjscia neuronu
+		B[iA] = ( y_[j] - v[j] ) * (mDif[L])( mA[iA] );
+
+		// korekcja wag j-tego neuronu warstwy L
+		// TODO: dla biasu
+		for( Size i= 1 ; i<nN[L-1] ; ++i )
+			//  w^L_ij           -ni      b^L_j       x^L_i
+			mW[idxW(L,j,i)] += Net::sNi * B[iA] * (mFun[L-1])(mA[idxA(L-1,j)]);
+	}
+
+	// TODO: dla warstw od L-1 do 2
+
+	// TODO: dla pierwszej warstwy
 }
 
 

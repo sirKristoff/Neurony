@@ -49,6 +49,15 @@ public:
 
 
 	/**
+	 * @brief Uczenie na jednym przykladzie
+	 * @param u  wzorcowe wejscie
+	 * @param v  wzorcowe wyjscie
+	 */
+	void
+	example( const vector<Input>& u, const vector<Input>& v );
+
+
+	/**
 	 * @brief Blad sieci wzgledem wzorca
 	 * @param u  wzorcowe wejscie
 	 * @param v  wzorcowe wyjscie
@@ -166,6 +175,8 @@ public:
 
 	LockBias fLockBias;   /*!< flaga zablokowana biasu: zablokowany ma wartosc zero i jego waga sie nie zmienia */
 	LearningState fLearningState;  /*!< flaga stanu uczenia sie sieci: nauczona siec nie zmienia swoich wag */
+
+	static Input sNi;
 
 private:
 
