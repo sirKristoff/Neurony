@@ -221,6 +221,43 @@ void error()
 	LOG_IO("err: " << net.e(u,v) << endl);
 }
 
+void learning()
+{
+	Input tmpX[nIn]= {2.0,4.0};  // wzorcowe wejscie
+	Input tmpV[] = {0.0};        // wzorcowe wyjscie
+	vector<Input> u(tmpX,tmpX+nIn);
+	vector<Input> v(tmpV, tmpV+1);
+	vector<Input> y_;
+
+	LOG_IO( LINE << "Uczenie sieci" << endl );
+
+	LOG_IO("u:   ");
+	FOR_EACH(i,u.size(),
+			 LOG_IO( u[i] << " "););
+	LOG_IO(endl);
+	LOG_IO("v:   ");
+	FOR_EACH(i,v.size(),
+			 LOG_IO( v[i] << " "););
+	LOG_IO(endl);
+
+	y_ = net.y(u);
+	LOG_IO("y(t=0): ");
+	FOR_EACH(i,y_.size(),
+			 LOG_IO( y_[i] << " "););
+	LOG_IO(endl);
+
+	FOR_EACH(i,10000,
+			 net.example(u,v););
+
+	y_ = net.y(u);
+	LOG_IO("y(t=10000): ");
+	FOR_EACH(i,y_.size(),
+			 LOG_IO( y_[i] << " "););
+	LOG_IO(endl);
+
+}
+
+
 //*****************************************************************************
 int main()
 {
@@ -244,6 +281,9 @@ int main()
 
 	learnState();
 
+	printW();
+	learning();
+	printW();
 
 	return 0;
 }

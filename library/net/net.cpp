@@ -11,14 +11,21 @@ using namespace std;
 #include "net.h"
 
 
-Input Net::sNi= -0.1;
+Input Net::sNi= 0.1;
 
 namespace my{
-Weight rand(){
+Weight rand()
+{
 	return ::rand()%2;
-//	return Weight(::rand())/RAND_MAX -0.5;
+//	return Weight(::rand())/RAND_MAX -0.5;  // <-0.5, 0.5)
 }
 }
+
+// wartosc biasu
+#define  X0      (fLockBias==lbLock ? Input(0) : Input(1))
+// wartosc wagi dla biasu
+#define  W0j(j)  (fLockBias==lbLock ? Weight(0) : mW[j])
+
 
 //*** Net **********************************************************************
 /**
@@ -81,28 +88,70 @@ Net::~Net()
 void
 Net::example( const vector<Input>& u, const vector<Input>& v )
 {
-	vector<Input>  B( nCumN.back(), Input(0) ); // wartosci b^l_j dla kazdego neuronu
+#ifdef DEBUG
+	if( u.size() != nN[0] )
+		throw range_error("Net::example(vector<Input>,vector<Input>): "
+						  "Rozmiar wzorcowego wejscia nie zgadza sie z wymiarem sieci");
+	if( v.size() != nN.back() )
+		throw range_error("Net::example(vector<Input>,vector<Input>): "
+						  "Rozmiar wzorcowego wyjscia nie zgadza sie z wymiarem sieci");
+#endif
+
+	const Size L= nN.size()-1; // ilosc warstw sieci
+	vector<Input>  B( nCumN[L], Input(0) ); // wartosci b^l_j dla kazdego neuronu
 
 	this->unlearnedState();  // wlaczamy nauke
 	vector<Input> y_ = this->y(u);  // obliczamy odpowiedzi neuronow
 
-	Size L= nN.size()-1;
-	Size iA;
+	Size iA;  // globalny indeks neuronu
+
 	// dla ostatniej warstwy L
-	for( Size j= 0 ; j<nN.back() ; ++j ){
+	for( Size j= 0 ; j<nN[L] ; ++j ){
 		iA = idxA(L,j);  // indeks wyjscia neuronu
 		B[iA] = ( y_[j] - v[j] ) * (mDif[L])( mA[iA] );
-
-		// korekcja wag j-tego neuronu warstwy L
-		// TODO: dla biasu
-		for( Size i= 1 ; i<nN[L-1] ; ++i )
-			//  w^L_ij           -ni      b^L_j       x^L_i
-			mW[idxW(L,j,i)] += Net::sNi * B[iA] * (mFun[L-1])(mA[idxA(L-1,j)]);
 	}
 
-	// TODO: dla warstw od L-1 do 2
+	Input sumBW;
+	// dla warstw od L-1 do 1
+	for( Size l= L-1 ; 0<l ; --l ){
+		// dla kazdego neuronu w warstwie
+		for( Size j= 0 ; j<nN[l] ; ++j ){
+			iA = idxA(l,j);  // indeks wyjscia neuronu
 
-	// TODO: dla pierwszej warstwy
+			sumBW = Input(0);
+			// wszystkie neurony z warstwy wyzszej
+			for( Size jj= 0 ; jj<nN[l+1] ; ++jj )  //      \/ waga 1 polaczona z wejsciem 0
+				sumBW += B[idxA(l+1,jj)] * mW[idxW(l+1,jj,j+1)];
+			B[iA] = sumBW * (mDif[l])( mA[iA] );
+		}
+	}
+
+	// korekcja wag
+	Input dB;
+	Input dW= 0;
+	vector<Input> in= u;
+	vector<Input> out;
+
+	// TODO: zachowac wartosci dW
+
+	// dla warstw od 1 do L
+	for( Size l = 1 ; l<=L ; ++l ){  // kazda warstwa
+		out = this->y(in,l);  // wejscie dla nastepnej warstwy
+
+		for( Size j= 0 ; j<nN[l] ; ++j ){  // kazdy neuron
+			dB= - Net::sNi * B[idxA(l,j)];  // b^l_j
+
+			dW = dB * X0;  // waga biasu
+			mW[idxW(l,j,0)] += dW;
+
+			for( Size i= 1 ; i<=nN[l-1] ; ++i ){  // kazda waga
+				dW =  dB * in[i-1];
+				mW[idxW(l,j,i)] += dW;
+			}
+		}
+
+		in=out; // wyjscie obecnej warstwy staje sie wejsciem dla kolejnej
+	}
 }
 
 
@@ -236,7 +285,7 @@ Net::a( const vector<Input> &x, Size l, Size j )
 
 	const Size index0= idxW(l,j,0);
 	Input ret= inner_product( &mW[index0+1], &mW[index0+1+nN[l-1]], x.begin(),
-			(fLockBias==lbLock ? Weight(0) : mW[index0]) );  // iloczyn skalarny wejscia z wagami
+			W0j(index0) );  // iloczyn skalarny wejscia z wagami
 
 	if( fLearningState == lsUnlearned )  // siec w trakcie nauki
 		mA[ idxA(l,j) ] = ret;
