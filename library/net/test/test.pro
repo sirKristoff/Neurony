@@ -14,4 +14,5 @@ SOURCES += main.cpp \
 
 HEADERS += ../definitions.h \
 	../net.h \
-	../funs.h
+	../funs.h \
+    ../../test/testgroup.h

@@ -1,10 +1,13 @@
 #include <iostream>
 #include <time.h>
 #include <stdlib.h>
+#include <string>
+#include <sstream>
 
 #include "./../definitions.h"
 #include "./../funs.h"
 #include "./../net.h"
+#include "./../../test/testgroup.h"
 
 using namespace std;
 
@@ -24,6 +27,57 @@ using namespace std;
 
 #define LOG_IO(what) \
 	LOG( cerr << what )
+
+//*****************************************************************************
+
+class TestGroupSimple : public TestGroup, public Net
+{
+
+	static const Size nIn;
+	static const Size L;
+	static const Size l[];
+	static const Fun f[];
+	static const Dif df[];
+
+public:
+
+	TestGroupSimple()
+		: TestGroup(), Net(vector<Size>(l,l+L+1), vector<Fun>(f,f+L),
+						   vector<Dif>(df,df+L), Net::lbLock)
+	{
+		REGISTER_TC( TestGroupSimple, tc01_nN );
+	}
+
+
+	TcResult
+	tc01_nN()
+	{
+		sout.flush();
+		LOG_IO( "nN(l):    ");
+		FOR_EACH(l, nN.size(),\
+				 LOG_IO( nN[l] << " " ); \
+				sout << nN[l] << " ";);
+		LOG_IO(endl);
+
+		string expected = "2 4 2 1 ";
+		if( sout.str() != expected ){
+			cerr << "Unexpected values: '" << sout.str() << "' != '" << expected << "'" << endl;
+			return  (trFail);
+		}
+		return  (trPass);
+	}
+
+	ostringstream sout;
+	ostringstream scheck;
+};
+
+const Size TestGroupSimple::nIn= 2;
+const Size TestGroupSimple::L= 3;
+const Size TestGroupSimple::l[L+1] = {nIn,4,2,1};
+const Fun TestGroupSimple::f[L] = {ident,ident,ident};
+const Dif TestGroupSimple::df[L] = {d_ident,d_ident,d_ident};
+
+
 
 //*****************************************************************************
 
@@ -262,6 +316,10 @@ void learning()
 int main()
 {
 //	srand(time(0));
+
+	TestGroupSimple tg1;
+
+	tg1.run_group();
 
 	printN();    // 2 4 2 1
 	printcumN(); // 0 4 6 7
