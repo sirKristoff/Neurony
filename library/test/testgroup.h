@@ -1,19 +1,21 @@
 #ifndef TESTGROUP_H
 #define TESTGROUP_H
 
-#include <vector>
-#include <ostream>
+#include <exception>
 #include <iostream>
-#include <string>
+#include <ostream>
 #include <sstream>
+#include <string>
+#include <vector>
 
-using std::vector;
-using std::ostream;
+using std::exception;
 using std::cout;
 using std::cerr;
 using std::endl;
-using std::string;
+using std::ostream;
 using std::ostringstream;
+using std::string;
+using std::vector;
 
 
 #define  GLINE  "*******************************************************************************\n"
@@ -21,6 +23,7 @@ using std::ostringstream;
 #define  REGISTER_TC( TestGroupClass, tcMethod )  { \
 	log() << "Adding new test case: "#tcMethod << std::endl; \
 	this->addTc(string(#tcMethod), reinterpret_cast<PtrTc>(&TestGroupClass::tcMethod)); }
+
 
 /**
  * @class TestGroup
@@ -43,7 +46,7 @@ public:
 protected:
 
 	TestGroup( const string& tgName, ostream& logStream= cout, ostream& errStream= cerr )
-		: mTestGroupName(tgName), plog(&logStream), perr(&errStream)
+		: plog(&logStream), perr(&errStream), mTestGroupName(tgName)
 	{}
 
 	TestGroup( const TestGroup& src )
@@ -79,14 +82,19 @@ public:
 				  << "\tTest Case: \"" << mTcNames[i] << "\"" << endl;
 			try{
 				_tcResult = (this->*(mTcs[i]))();
-			} catch( ... ){  // TODO: obsluga wiadomosci zawartej w wyjatku
+			} catch( const exception& e ){
+				reason( e.what() );
+				_tcResult = trFail;
+			} catch( ... ){
+				reason("Unexpected exception caught!");
 				_tcResult = trFail;
 			}
 			if( _tcResult == trPass ){
 				log() << "Test case PASSED" << endl;
 				++_nPass;
 			}else{
-				err() << "Test case FAILED!" << endl;
+				err() << "Test case FAILED!" << endl
+					  << "Reason is: \"" << reason() << endl;
 			}
 		}
 
@@ -107,12 +115,20 @@ public:
 	{  return  (mTcs.size());  }
 
 	ostream&
-	log()
+	log()  const
 	{  return  (*plog);  }
 
 	ostream&
-	err()
+	err()  const
 	{  return  (*perr);  }
+
+	void
+	reason(const string& reasonOfFailure )
+	{  mReason = reasonOfFailure;  }
+
+	const string&
+	reason()  const
+	{  return  (mReason);  }
 
 protected:
 
@@ -134,11 +150,12 @@ protected:
 
 private:
 
-	ostream* plog;
-	ostream* perr;
-	string mTestGroupName;
-	vector<PtrTc> mTcs;
-	vector<string> mTcNames;
+	ostream* plog;   // strumien logow
+	ostream* perr;   // strumien bledow
+	string mReason;  // powod z jakiego test case nie przeszedl
+	string mTestGroupName;   // nazwa grupy testowej
+	vector<PtrTc> mTcs;      // lista test case'ow
+	vector<string> mTcNames; // lista nazw test case'ow
 };
 
 
