@@ -17,14 +17,37 @@ using std::ostringstream;
 using std::string;
 using std::vector;
 
+//******************************************************************************
 
 #define  GLINE  "*******************************************************************************\n"
 #define  TCLINE "-------------------------------------------------------------------------------\n"
+
 #define  REGISTER_TC( TestGroupClass, tcMethod )  { \
 	log() << "Adding new test case: "#tcMethod << std::endl; \
 	this->addTc(string(#tcMethod), reinterpret_cast<PtrTc>(&TestGroupClass::tcMethod)); }
 
+#define LOG( what )  { log() << what; }
 
+#define LOG_ASSERT( what ) { \
+	LOG( what ); \
+	assertStream << what; }
+
+#define ASSERT( expected ) {   \
+	std::ostringstream reasStream;   \
+	std::ostringstream expStream;   \
+	expStream << (expected);   \
+	if( assertStream.str() != expStream.str() ){   \
+		reasStream << "Assertion failed  at line " << __LINE__;   \
+		reason(reasStream.str());   \
+		err() << reason() << std::endl   \
+			  << "received: \"" << assertStream.str() << "\"" << std::endl   \
+			  << "expected: \"" << expected << "\"" << std::endl;   \
+		return  (trFail);   \
+	}else{   \
+		log() << "Assertion ok at line " << __LINE__ << endl;   \
+	}   }
+
+//******************************************************************************
 /**
  * @class TestGroup
  * @brief Abstrakcja grupy test case'ow
@@ -53,11 +76,11 @@ protected:
 		: plog(src.plog), mTcs(src.mTcs)
 	{}
 
-public:
-
 	TestGroup&
 	operator=( const TestGroup& rhs )
 	{  plog = rhs.plog;  mTcs = rhs.mTcs;  return (*this);  }
+
+public:
 
 	virtual
 	~TestGroup()
@@ -96,6 +119,9 @@ public:
 				err() << "Test case FAILED!" << endl
 					  << "Reason is: \"" << reason() << endl;
 			}
+
+			assertStream.str("");
+			assertStream.clear();
 		}
 
 		log() << TCLINE
@@ -147,6 +173,9 @@ protected:
 	vector<PtrTc>::const_iterator
 	end()  const
 	{  return  (mTcs.end());  }
+
+
+	ostringstream assertStream;
 
 private:
 
