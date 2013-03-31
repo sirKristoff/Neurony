@@ -4,18 +4,23 @@
 #include <vector>
 #include <ostream>
 #include <iostream>
+#include <string>
+#include <sstream>
 
 using std::vector;
 using std::ostream;
+using std::cout;
 using std::cerr;
 using std::endl;
+using std::string;
+using std::ostringstream;
 
 
 #define  GLINE  "*******************************************************************************\n"
 #define  TCLINE "-------------------------------------------------------------------------------\n"
 #define  REGISTER_TC( TestGroupClass, tcMethod )  { \
 	log() << "Adding new test case: "#tcMethod << std::endl; \
-	this->addTc(reinterpret_cast<PtrTc>(&TestGroupClass::tcMethod)); }
+	this->addTc(string(#tcMethod), reinterpret_cast<PtrTc>(&TestGroupClass::tcMethod)); }
 
 /**
  * @class TestGroup
@@ -25,7 +30,6 @@ class TestGroup
 {
 public:
 
-	// TODO: dodac nazwy test casow
 	typedef  enum{
 		trFail,
 		trPass
@@ -38,8 +42,8 @@ public:
 
 protected:
 
-	TestGroup( ostream& tcstream= cerr )
-		: plog( &tcstream )
+	TestGroup( const string& tgName, ostream& logStream= cout, ostream& errStream= cerr )
+		: mTestGroupName(tgName), plog(&logStream), perr(&errStream)
 	{}
 
 	TestGroup( const TestGroup& src )
@@ -68,10 +72,11 @@ public:
 		size_t _nAll= size();
 		bool _tcResult;
 
-		log() << GLINE;
-		log() << "Test cases in group: " << _nAll << endl;
+		log() << GLINE
+			  << "\tTest Group: \"" << mTestGroupName << "\"" << endl;
 		for( size_t i= 0 ; i<_nAll ; ++i ){
-			log() << TCLINE;
+			log() << TCLINE
+				  << "\tTest Case: \"" << mTcNames[i] << "\"" << endl;
 			try{
 				_tcResult = (this->*(mTcs[i]))();
 			} catch( ... ){  // TODO: obsluga wiadomosci zawartej w wyjatku
@@ -81,7 +86,7 @@ public:
 				log() << "Test case PASSED" << endl;
 				++_nPass;
 			}else{
-				log() << "Test case FAILED!" << endl;
+				err() << "Test case FAILED!" << endl;
 			}
 		}
 
@@ -105,6 +110,10 @@ public:
 	log()
 	{  return  (*plog);  }
 
+	ostream&
+	err()
+	{  return  (*perr);  }
+
 protected:
 
 	/**
@@ -112,8 +121,8 @@ protected:
 	 * @param tc  Wskaznik do metody test case'a
 	 */
 	void
-	addTc( PtrTc tc )
-	{  mTcs.push_back(tc);  }
+	addTc( const string& tcName, PtrTc tc )
+	{  mTcNames.push_back(tcName);  mTcs.push_back(tc);  }
 
 	vector<PtrTc>::const_iterator
 	begin()  const
@@ -126,7 +135,10 @@ protected:
 private:
 
 	ostream* plog;
+	ostream* perr;
+	string mTestGroupName;
 	vector<PtrTc> mTcs;
+	vector<string> mTcNames;
 };
 
 

@@ -10,7 +10,7 @@ class MyTestGroup: public TestGroup
 public:
 
 	MyTestGroup()
-		: TestGroup(cout)
+		: TestGroup("Basic Test Group", cout)
 	{
 		REGISTER_TC( MyTestGroup, tc01 );
 	}
