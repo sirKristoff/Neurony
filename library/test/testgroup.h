@@ -19,8 +19,8 @@ using std::vector;
 
 //******************************************************************************
 
-#define  GLINE  "*******************************************************************************\n"
-#define  TCLINE "-------------------------------------------------------------------------------\n"
+#define  GLINE  "*******************************************************************************\n\n"
+#define  TCLINE "-------------------------------------------------------------------------------\n\n"
 
 #define  REGISTER_TC( TestGroupClass, tcMethod )  { \
 	log() << "Adding new test case: "#tcMethod << std::endl; \
@@ -99,10 +99,11 @@ public:
 		bool _tcResult;
 
 		log() << GLINE
-			  << "\tTest Group: \"" << mTestGroupName << "\"" << endl;
+			  << "\tTest Group: \"" << mTestGroupName << "\"" << endl << endl;
 		for( size_t i= 0 ; i<_nAll ; ++i ){
 			log() << TCLINE
-				  << "\tTest Case: \"" << mTcNames[i] << "\"" << endl;
+				  << "\tTest Case: \"" << mTcNames[i] << "\"" << endl << endl
+				  << TCLINE;
 			try{
 				_tcResult = (this->*(mTcs[i]))();
 			} catch( const exception& e ){
@@ -113,22 +114,26 @@ public:
 				_tcResult = trFail;
 			}
 			if( _tcResult == trPass ){
-				log() << "Test case PASSED" << endl;
+				log() << endl
+					  << TCLINE
+					  << "Test case PASSED" << endl << endl;
 				++_nPass;
 			}else{
-				err() << "Test case FAILED!" << endl
-					  << "Reason is: \"" << reason() << endl;
+				err() << endl
+					  << TCLINE
+					  << "Test case FAILED!" << endl
+					  << "Reason is: \"" << reason() << endl << endl;
 			}
 
 			assertStream.str("");
 			assertStream.clear();
 		}
 
-		log() << TCLINE
+		log() << GLINE
 			  << "Test group result:" << endl
 			  << "\tPassed: " << _nPass << endl
 			  << "\tFailed: " << _nAll-_nPass << endl
-			  << "\tAll:    " << _nAll << endl;
+			  << "\tAll:    " << _nAll << endl << endl;
 		return  (_nPass);
 	}
 
