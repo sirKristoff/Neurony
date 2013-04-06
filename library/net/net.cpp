@@ -414,3 +414,7 @@ Net::calculateCumN( const vector<Size>& N )
 
 	return (cumN);
 }
+
+
+#undef  X0
+#undef  W0j

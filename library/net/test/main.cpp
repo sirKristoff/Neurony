@@ -16,17 +16,17 @@ using namespace std;
 	for(unsigned int i= 0 ; i<(n) ; ++i){ \
 		what; }
 
-#define LINE  "-------------------------------------------------------------\n"
+#define LINE  "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"
 
 #ifdef DEBUG
- #define LOG(what) \
+ #define LOGD(what) \
 	what
 #else
- #define LOG(what)
+ #define LOGD(what)
 #endif
 
 #define LOG_IO(what) \
-	LOG( cerr << what )
+	LOGD( cerr << what )
 
 //*****************************************************************************
 
@@ -35,45 +35,148 @@ class TestGroupSimple : public TestGroup, public Net
 
 	static const Size nIn;
 	static const Size L;
-	static const Size l[];
+	static const Size tabL[];
 	static const Fun f[];
 	static const Dif df[];
 
 public:
 
 	TestGroupSimple()
-		: TestGroup(), Net(vector<Size>(l,l+L+1), vector<Fun>(f,f+L),
+		: TestGroup("Testy pol po konstrukcji obiektu"),
+		  Net(vector<Size>(tabL,tabL+L+1), vector<Fun>(f,f+L),
 						   vector<Dif>(df,df+L), Net::lbLock)
 	{
 		REGISTER_TC( TestGroupSimple, tc01_nN );
+		REGISTER_TC( TestGroupSimple, tc02_Cum );
+		REGISTER_TC( TestGroupSimple, tc03_Idx );
+		REGISTER_TC( TestGroupSimple, tc04_constructor_structures );
 	}
 
 
+	// ilosci neuronow w warstwach
 	TcResult
 	tc01_nN()
 	{
-		sout.flush();
-		LOG_IO( "nN(l):    ");
-		FOR_EACH(l, nN.size(),\
-				 LOG_IO( nN[l] << " " ); \
-				sout << nN[l] << " ";);
-		LOG_IO(endl);
+		LOG( "nN(l):    ");
+		FOR_EACH(l, nN.size(), \
+				LOG_ASSERT( nN[l] << " " ); );
 
-		string expected = "2 4 2 1 ";
-		if( sout.str() != expected ){
-			cerr << "Unexpected values: '" << sout.str() << "' != '" << expected << "'" << endl;
-			return  (trFail);
-		}
+		LOG(endl);
+
+		ostringstream ilosci_neuronow;
+		FOR_EACH(l, TestGroupSimple::L+1, \
+				 ilosci_neuronow << TestGroupSimple::tabL[l]<<" " );
+		ASSERT( ilosci_neuronow.str(),\
+				"Ilosc neuronow w kazdej warstwie sie nie zgadza" );  // "2 4 2 1 "
+
 		return  (trPass);
 	}
 
-	ostringstream sout;
-	ostringstream scheck;
+
+	// Skumulowane ilosci wag, neuronow
+	TcResult
+	tc02_Cum()
+	{
+		LOG( "nCumW(l): " );
+		FOR_EACH(l, nCumW.size(),\
+				 LOG_ASSERT( nCumW[l] << " " ) );
+		LOG(endl);
+		ASSERT( "0 12 22 25 ", \
+				"Ilosc wag w warstwach sie nie zgadza" );
+
+
+		LOG(SEPLINE);
+
+
+		LOG( "nCumN(l): " );
+		FOR_EACH(l, nCumN.size(),\
+				 LOG_ASSERT( nCumN[l] << " " ) );
+		LOG(endl);
+		ASSERT( "0 4 6 7 ", \
+				"Ilosc neuronow w warstwach sie nie zgadza" );  // sumowane ilosci neuronow
+
+		return  (trPass);
+	}
+
+
+	// Indeksy wag, neuronow
+	TcResult
+	tc03_Idx()
+	{
+		Size ilosc_wag= 0;
+		LOG( "idxW(l,j,i):" << endl );
+
+		for( Size l= 1 ; l<nN.size() ; ++l ){
+			for( Size j= 0 ; j<nN[l] ; ++j ){
+				LOG( "(" << l << "," << j << ",i): " );
+				for( Size i= 0 ; i<=nN[l-1] ; ++i ){
+					LOG_ASSERT( idxW(l,j,i) << " ");
+					++ilosc_wag;
+				}
+				LOG(endl);
+			}
+			LOG(endl);
+		}
+
+
+		ostringstream indeksy;
+		FOR_EACH(i, ilosc_wag, indeksy<<i<<" ");
+		ASSERT( indeksy.str(), \
+				"Zle wartoscie metody idxW(l,j,i)" );
+
+
+		// sprawdz ilosc_wag
+		COMPAR( ilosc_wag, nCumW.back(), \
+				"Niezgodnosc calkowitej ilosci wag w sieci" );
+
+		LOG(SEPLINE);
+
+		Size ilosc_neuronow= 0;
+		LOG( "idxA(l,j):\n" );
+
+		for( Size l= 1 ; l<nN.size() ; ++l ){
+			LOG( "(" << l << ",j): " );
+			for( Size j= 0 ; j<nN[l] ; ++j ){
+				LOG_ASSERT( idxA(l,j) << " " );
+				++ilosc_neuronow;
+			}
+			LOG(endl);
+		}
+		LOG(endl);
+
+		indeksy.str("");
+		FOR_EACH(i, ilosc_neuronow, indeksy<<i<<" ");
+		ASSERT( indeksy.str(), \
+				"Zle wartosci metody idxA(l,j)");
+
+		// sprawdz ilosc_neuronow
+		COMPAR( ilosc_neuronow, nCumN.back(), \
+				"Niezgodnosc calkowitej ilosci neuronow w sieci");
+
+		return  (trPass);
+	}
+
+
+	// Sprawdzanie struktur wypelnianych w trakcie dzialania konstruktora
+	TcResult
+	tc04_constructor_structures()
+	{
+		COMPAR( mFun[0] , NULL, "Nieprawidlowa funkcja aktywacji" );
+		COMPAR( mDif[0] , NULL, "Nieprawidlowa pochodna funkcji aktywacji" );
+
+		COMPAR( mFun.size() , TestGroupSimple::L+1, "Zla ilosc funkcji aktywacji");
+		COMPAR( mDif.size() , TestGroupSimple::L+1, "Zla ilosc pochodnych funkcji aktywacji");
+
+		COMPAR( fLearningState, lsUnlearned, "Zla wartosc flagi nauki sieci" );
+
+		return  (trPass);
+	}
+
 };
 
 const Size TestGroupSimple::nIn= 2;
 const Size TestGroupSimple::L= 3;
-const Size TestGroupSimple::l[L+1] = {nIn,4,2,1};
+const Size TestGroupSimple::tabL[L+1] = {nIn,4,2,1};
 const Fun TestGroupSimple::f[L] = {ident,ident,ident};
 const Dif TestGroupSimple::df[L] = {d_ident,d_ident,d_ident};
 
@@ -81,48 +184,20 @@ const Dif TestGroupSimple::df[L] = {d_ident,d_ident,d_ident};
 
 //*****************************************************************************
 
-const Size nIn= 2;
-const Size L= 3;
-const Size l[L+1] = {nIn,4,2,1};
-const Fun f[L] = {ident,uni_sigm,bi_sigm};
+const Size nIn= 2;                // ilosc wejsc sieci
+const Size L= 3;                  // ilosc warstw sieci
+const Size l[L+1] = {nIn,4,2,1};  // ilosc neuronow w warstwach
+const Fun f[L] = {ident,uni_sigm,bi_sigm};        // funkcje aktywacji neuronow w warstwach
 const Dif df[L] = {d_ident,d_uni_sigm,d_bi_sigm};
+
 
 Net net(vector<Size>(l,l+L+1), vector<Fun>(f,f+L), vector<Dif>(df,df+L),
 		Net::lbLock );
 
 //*****************************************************************************
-/** rozmiary warstw */
-void printN()
-{
-	LOG_IO( LINE << "nN(l):    ");
-	FOR_EACH(l,net.nN.size(),\
-			 LOG_IO( net.nN[l] << " " ));
-	LOG_IO(endl);
-}
 
-/** skumulowane ilosci wag warstw */
-void printCumW()
-{
-	LOG_IO( LINE << "nCumW(l): ");
-	FOR_EACH(l, net.nCumW.size(),\
-			 LOG_IO( net.nCumW[l] << " " ));
-	LOG_IO(endl);
-}
 
-/** indeksy wag */
-void testIdx()
-{
-	LOG_IO( LINE << "Net idxW(l,j,i):\n");
-	for( Size l= 1 ; l<net.nN.size() ; ++l ){
-		for( Size j= 0 ; j<net.nN[l] ; ++j ){
-			LOG_IO( "(" << l << "," << j << ",i): ");
-			for( Size i= 0 ; i<=net.nN[l-1] ; ++i )
-				LOG_IO( net.idxW(l,j,i) << " ");
-			LOG_IO(endl);
-		}
-		LOG_IO( endl );
-	}
-}
+
 
 /** wartosci wag */
 void printW()
@@ -180,22 +255,6 @@ void printOdpowiedz()
 	LOG_IO( "y(x) = " << net.y(x).front() << endl);
 }
 
-void printcumN()
-{
-	const vector<Size> N(l,l+L+1);
-	vector<Size> cum= Net::calculateCumN( N );
-
-	LOG_IO( LINE << "Skumulowana ilosc neuronow\n" );
-	LOG_IO( "static CumN(l):  ");
-	FOR_EACH(l,cum.size(),\
-			 LOG_IO( cum[l] << " " ));
-	LOG_IO(endl);
-
-	LOG_IO( "nCumN(l):        ");
-	FOR_EACH(l,net.nCumN.size(),\
-			 LOG_IO( net.nCumN[l] << " " ));
-	LOG_IO(endl);
-}
 
 void learnState()
 {
@@ -205,13 +264,13 @@ void learnState()
 			<< endl );
 
 //	net.fLearningState= Net::lsLearned;
-	LOG( net.learnedState() );
+	LOGD( net.learnedState() );
 	LOG_IO( "  turn learnedState()" << endl );
 	LOG_IO( "fLearningState= "
 			<< (net.fLearningState==Net::lsLearned ? "lsLearned" : "lsUnlearned")
 			<< endl );
 
-	LOG( net.unlearnedState() );
+	LOGD( net.unlearnedState() );
 	LOG_IO( "  turn unlearnedState()" << endl );
 	LOG_IO( "fLearningState= "
 			<< (net.fLearningState==Net::lsLearned ? "lsLearned" : "lsUnlearned")
@@ -321,27 +380,23 @@ int main()
 
 	tg1.run_group();
 
-	printN();    // 2 4 2 1
-	printcumN(); // 0 4 6 7
-	printCumW(); // 0 12 22 25
-	printW();
-	printA();
 
-	error();  // 0.289337
+//	printW();
+//	printA();
 
-	testIdx();
+//	error();  // 0.289337
 
-	a();
+//	a();
 
-	printOdpowiedz();
+//	printOdpowiedz();
 
-	testFun();
+//	testFun();
 
-	learnState();
+//	learnState();
 
-	printW();
-	learning();
-	printW();
+//	printW();
+//	learning();
+//	printW();
 
 	return 0;
 }
