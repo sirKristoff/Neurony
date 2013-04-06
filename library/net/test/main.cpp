@@ -137,7 +137,7 @@ public:
 		for( Size l= 1 ; l<nN.size() ; ++l ){
 			LOG( "(" << l << ",j): " );
 			for( Size j= 0 ; j<nN[l] ; ++j ){
-				LOG_ASSERT( idxA(l,j) << " " );
+				LOG_ASSERT( idxN(l,j) << " " );
 				++ilosc_neuronow;
 			}
 			LOG(endl);
@@ -300,7 +300,7 @@ void printA()
 	for( Size l= 1 ; l<net.nN.size() ; ++l ){
 		LOG_IO( "(" << l << ",j): ");
 		for( Size j= 0 ; j<net.nN[l] ; ++j ){
-			LOG_IO( net.mA[ net.idxA(l,j) ] << " ");
+			LOG_IO( net.mA[ net.idxN(l,j) ] << " ");
 		}
 		LOG_IO(endl);
 	}

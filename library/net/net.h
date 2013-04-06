@@ -8,6 +8,16 @@
 using namespace std;
 
 
+/**
+ * @brief Wielowarstwowy perceptron
+ *
+ * Siec neuronowa posiadajaca @a L (size()) warstw razem z zerowa warstwa kopiujaca.@n
+ * Rozmiar wejscia i wyjscia sieci wynosi: sizeIn() oraz sizeOut().@n
+ * W kazdej warstwie @a l znajduje sie N^l (sizeN(l)) neuronow, razem w sieci
+ * jest sizeN() neuronow.@n
+ * Kazda warstwa moze posiadac swoja funkcje aktywacji dla neuronow tej warstwy.@n
+ *
+ */
 class Net
 {
 public:
@@ -30,16 +40,17 @@ public:
 		lsUnlearned = 1
 		} LearningState;
 
+
 	/**
 	 * @brief Net
-	 * @param N  Ilosci neuronow w kolejnych warstwach - N.size() == L+1
+	 * @param N  Ilosci neuronow w kolejnych warstwach - N.size() == L
 	 * @param lockBias  Znacznik zablokowania biasu
 	 */
 	Net( const vector<Size>& N, LockBias lockBias= lbUnlock );
 	/**
 	 * @brief Net
-	 * @param N    Ilosci neuronow w kolejnych warstwach - N.size() == L+1
-	 * @param fun  Funkcje aktywacji dla kazdej warstwy - fun.size() == L
+	 * @param N    Ilosci neuronow w kolejnych warstwach - N.size() == L
+	 * @param fun  Funkcje aktywacji dla kazdej warstwy - fun.size() == L-1
 	 * @param dif  Pochodne funkcji aktywacji dla kazdej warstwy
 	 * @param lockBias  Znacznik zablokowania biasu
 	 */
@@ -52,6 +63,8 @@ public:
 	 * @brief Uczenie na jednym przykladzie
 	 * @param u  wzorcowe wejscie
 	 * @param v  wzorcowe wyjscie
+	 * @note  size(u) == this->sizeIn() @n
+	 *        size(v) == this->sizeOut()
 	 */
 	void
 	example( const vector<Input>& u, const vector<Input>& v );
@@ -62,6 +75,8 @@ public:
 	 * @param u  wzorcowe wejscie
 	 * @param v  wzorcowe wyjscie
 	 * @return  Srednie odchylenie wyjscia sieci od wzorcowego wyjscia
+	 * @note  size(u) == sizeIn() @n
+	 *        size(v) == sizeOut()
 	 */
 	Input
 	e( const vector<Input>& u, const vector<Input>& v );
@@ -91,7 +106,7 @@ public:
 	 * @param l  numer warstwy sieci
 	 * @param j  numer neuronu w warstwie
 	 * @return Poziom aktywacji neuronu
-	 * @note l C <1, L),  j C <0, nN[l])
+	 * @note l C <1, L),  j C <0, sizeN(l))
 	 */
 	Input
 	y( const vector<Input>& x, Size l, Size j );
@@ -113,7 +128,7 @@ public:
 	 * @param l  numer warstwy sieci
 	 * @param j  numer neuronu w warstwie
 	 * @return Iloczyn wag neuronu i jego wejscia
-	 * @note l C <1, L),  j C <0, nN[l])
+	 * @note l C <1, L),  j C <0, sizeN(l))
 	 */
 	Input
 	a( const vector<Input>& x, Size l, Size j );
@@ -134,29 +149,37 @@ public:
 
 
 	/**
-	 * @brief  Ilosc neuronow w sieci
+	 * @brief   Ilosc warstw sieci
+	 * @return  L
 	 */
+	Size
+	size()  const
+	{  return  (nN.size());  }
+
+	/**
+	 * @brief Ilosc neuronow w warstwie
+	 * @param l  Numer warstwy
+	 */
+	Size
+	sizeN( Size l )  const
+	{  return  (nN[l]);  }
+
+	/**  @brief  Ilosc neuronow w sieci  */
 	Size
 	sizeN()  const
 	{  return  (nCumN.back());  }
 
-	/**
-	 * @brief  Ilosc wag neuronow w sieci
-	 */
+	/**  @brief  Ilosc wag neuronow w sieci  */
 	Size
 	sizeW()  const
 	{  return  (nCumW.back());  }
 
-	/**
-	 * @brief  Rozmiar wejscia sieci
-	 */
+	/**  @brief  Rozmiar wejscia sieci  */
 	Size
 	sizeIn()  const
 	{  return  (nN.front());  }
 
-	/**
-	 * @brief  Rozmiar wyjscia sieci
-	 */
+	/**  @brief  Rozmiar wyjscia sieci  */
 	Size
 	sizeOut()  const
 	{  return  (nN.back());  }
@@ -169,7 +192,7 @@ public:
 	 * @param j  numer neuronu
 	 * @param i  numer wagi
 	 *
-	 * @note l C <1, L),  j C <0, nN[l]),  i C <0, nN[l-1]>
+	 * @note l C <1, L),  j C <0, sizeN(l)),  i C <0, sizeN(l-1)>
 	 */
 	Size
 	idxW( Size l, Size j, Size i )  const;
@@ -179,10 +202,10 @@ public:
 	 * @param l  numer warstwy
 	 * @param j  numer neuronu w warstwie
 	 *
-	 * @note l C <1, L),  j C <0, nN[l]),
+	 * @note l C <1, L),  j C <0, sizeN(l)),
 	 */
 	Size
-	idxA( Size l, Size j )  const;
+	idxN( Size l, Size j )  const;
 
 //private:
 
@@ -199,8 +222,8 @@ public:
 	vector<Size>  nCumW;  /*!< Sumy ilosci wag w neuronach kumulujac kolejne warstwy */
 	Weight*       mW;     /*!< Wagi calej sieci neuronowej (wagi z pierwszych warstw na poczatku */
 	Input*        mA;     /*!< Odpowiedzi wszystkich neuronow sieci */
-	vector<Fun> mFun;     /*!< Funkcje aktywacji dla kazdej warstwy */
-	vector<Dif> mDif;     /*!< Pochodne funkcji aktywacji */
+	vector<Fun>   mFun;   /*!< Funkcje aktywacji dla kazdej warstwy */
+	vector<Dif>   mDif;   /*!< Pochodne funkcji aktywacji */
 
 	LockBias fLockBias;   /*!< flaga zablokowana biasu: zablokowany ma wartosc zero i jego waga sie nie zmienia */
 	LearningState fLearningState;  /*!< flaga stanu uczenia sie sieci: nauczona siec nie zmienia swoich wag */
