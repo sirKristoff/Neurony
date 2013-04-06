@@ -16,8 +16,8 @@ Input Net::sNi= 0.1;
 namespace my{
 Weight rand()
 {
-	return ::rand()%2;
-//	return Weight(::rand())/RAND_MAX -0.5;  // <-0.5, 0.5)
+//	return irand_bi();
+	return rand_bi2();  // (-0.5, 0.5)
 }
 }
 
@@ -42,7 +42,7 @@ Net::Net(const vector<Size>& N, LockBias lockBias)
 	mW = new Weight[sizeW()];
 	std::generate(&mW[0], &mW[sizeW()], my::rand);
 
-	this->unlearnedState();  // zarezerwuj pamiec dla mA
+//	this->unlearnedState();  // zarezerwuj pamiec dla mA
 
 	mFun[0] = NULL;
 	mDif[0] = NULL;
@@ -64,7 +64,7 @@ Net::Net(const vector<Size>& N , const vector<Fun> &fun, const vector<Dif> &dif,
 	mW = new Weight[sizeW()];
 	std::generate(&mW[0], &mW[sizeW()], my::rand);
 
-	this->unlearnedState();  // zarezerwuj pamiec dla mA
+//	this->unlearnedState();  // zarezerwuj pamiec dla mA
 
 	mFun.insert(mFun.begin(),NULL);  // mFun nie ma funkcji pod indeksem 0
 	mDif.insert(mDif.begin(),NULL);

@@ -16,35 +16,20 @@ using namespace std;
 	for(unsigned int i= 0 ; i<(n) ; ++i){ \
 		what; }
 
-#define LINE  "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"
-
-#ifdef DEBUG
- #define LOGD(what) \
-	what
-#else
- #define LOGD(what)
-#endif
-
-#define LOG_IO(what) \
-	LOGD( cerr << what )
 
 //*****************************************************************************
 
 class TestGroupSimple : public TestGroup, public Net
 {
 
-	static const Size nIn;
 	static const Size L;
 	static const Size tabL[];
-	static const Fun f[];
-	static const Dif df[];
 
 public:
 
 	TestGroupSimple()
 		: TestGroup("Testy pol po konstrukcji obiektu"),
-		  Net(vector<Size>(tabL,tabL+L+1), vector<Fun>(f,f+L),
-						   vector<Dif>(df,df+L), Net::lbLock)
+		  Net(vector<Size>(tabL,tabL+L))
 	{
 		REGISTER_TC( TestGroupSimple, tc01_nN );
 		REGISTER_TC( TestGroupSimple, tc02_Cum );
@@ -64,7 +49,7 @@ public:
 		LOG(endl);
 
 		ostringstream ilosci_neuronow;
-		FOR_EACH(l, TestGroupSimple::L+1, \
+		FOR_EACH(l, TestGroupSimple::L, \
 				 ilosci_neuronow << TestGroupSimple::tabL[l]<<" " );
 		ASSERT( ilosci_neuronow.str(),\
 				"Ilosc neuronow w kazdej warstwie sie nie zgadza" );  // "2 4 2 1 "
@@ -164,213 +149,209 @@ public:
 		COMPAR( mFun[0] , NULL, "Nieprawidlowa funkcja aktywacji" );
 		COMPAR( mDif[0] , NULL, "Nieprawidlowa pochodna funkcji aktywacji" );
 
-		COMPAR( mFun.size() , TestGroupSimple::L+1, "Zla ilosc funkcji aktywacji");
-		COMPAR( mDif.size() , TestGroupSimple::L+1, "Zla ilosc pochodnych funkcji aktywacji");
+		COMPAR( mFun.size() , TestGroupSimple::L, "Zla ilosc funkcji aktywacji");
+		COMPAR( mDif.size() , TestGroupSimple::L, "Zla ilosc pochodnych funkcji aktywacji");
 
-		COMPAR( fLearningState, lsUnlearned, "Zla wartosc flagi nauki sieci" );
+		COMPAR( fLearningState, lsLearned, "Zla wartosc flagi nauki sieci" );
 
 		return  (trPass);
 	}
 
 };
 
-const Size TestGroupSimple::nIn= 2;
-const Size TestGroupSimple::L= 3;
-const Size TestGroupSimple::tabL[L+1] = {nIn,4,2,1};
-const Fun TestGroupSimple::f[L] = {ident,ident,ident};
-const Dif TestGroupSimple::df[L] = {d_ident,d_ident,d_ident};
+const Size TestGroupSimple::L= 4;
+const Size TestGroupSimple::tabL[L] = {2,4,2,1};
 
 
 
 //*****************************************************************************
 
-const Size nIn= 2;                // ilosc wejsc sieci
-const Size L= 3;                  // ilosc warstw sieci
-const Size l[L+1] = {nIn,4,2,1};  // ilosc neuronow w warstwach
-const Fun f[L] = {ident,uni_sigm,bi_sigm};        // funkcje aktywacji neuronow w warstwach
-const Dif df[L] = {d_ident,d_uni_sigm,d_bi_sigm};
+class TestGroupOperations : public TestGroup, public Net
+{
+
+	static const Size L;
+	static const Size tabL[];
+	static const Fun f[];
+	static const Dif df[];
+
+public:
+
+	TestGroupOperations()
+		: TestGroup("Testy operacji na sieci"),
+		  Net(vector<Size>(tabL,tabL+L), vector<Fun>(f,f+L-1),
+						   vector<Dif>(df,df+L-1), lbUnlock)
+	{
+		FOR_EACH(i,sizeW(), mW[i]=int(i%4)-2; );
 
 
-Net net(vector<Size>(l,l+L+1), vector<Fun>(f,f+L), vector<Dif>(df,df+L),
-		Net::lbLock );
+		REGISTER_TC( TestGroupOperations, tc01_change_learningState );
+		REGISTER_TC( TestGroupOperations, tc02_response );
+		REGISTER_TC( TestGroupOperations, tc03_learning );
+	}
+
+
+	// zmiana stanu nauczania sieci
+	TcResult
+	tc01_change_learningState()
+	{
+		LOG( "Pruba zmianu stanu sieci na nauczona mimo tego ze ten stan jest juz osiagniety" << endl );
+		learnedState();
+		COMPAR( fLearningState, lsLearned, "Siec powinna byc w stanie \'lsLearned\'" );
+		mA= NULL;
+
+		LOG( "Zmiana stanu sieci na \'lsUnlearned\'" << endl );
+		unlearnedState();
+		COMPAR( fLearningState, lsUnlearned, "Siec powinna byc w stanie \'lsUnlearned\'" );
+//		UNCOMP( mA, NULL, "Tablica odpowiedzi neuronow nie powinna byc pusta" );
+
+
+		return  (trPass);
+	}
+
+
+	// obliczanie odpowiedzi sieci i jej bledu
+	TcResult
+	tc02_response()
+	{
+		LOG( "mW(l,j,i):  " << endl );
+		for( Size l= 1 ; l<dynamic_cast<Net*>(this)->size() ; ++l ){
+			for( Size j= 0 ; j<sizeN(l) ; ++j ){
+				LOG( "(" << l << "," << j << ",i): ");
+				for( Size i= 0 ; i<=sizeN(l-1) ; ++i )
+					LOG( mW[ idxW(l,j,i) ] << " ");
+				LOG(endl);
+			}
+			LOG(endl);
+		}
+		LOG(endl);
+
+
+		LOG("u(i):  ");
+		vector<Input> u(sizeIn());
+		FOR_EACH(i, u.size(), \
+				 u[i]=2*(i+1);
+				LOG(u[i] << " "); );
+		LOG(endl<<endl);
+
+
+		unlearnedState();
+		y(u);
+
+		LOG( "mA(l,j):  " << endl );
+		for( Size l= 1 ; l<dynamic_cast<Net*>(this)->size() ; ++l ){
+			LOG( "(" << l << ",j): ");
+			for( Size j= 0 ; j<sizeN(l) ; ++j ){
+				LOG_ASSERT( mA[ idxN(l,j) ] << " ");
+			}
+			LOG(endl);
+		}
+		LOG(endl<<endl);
+
+		ASSERT("-4 2 2 7 ", "Zla odpowiedz neuronow");
+
+
+		LOG("v(i):  ");
+		vector<Input> v(sizeOut(), Input(1));
+		FOR_EACH(i, v.size(), \
+				LOG(v[i] << " "); );
+		LOG(endl<<endl);
+
+		LOG("error:  ");
+		LOG_ASSERT( e(u,v) );
+		LOG(endl);
+		ASSERT( 18.5, "Zle wyliczony blad sieci");
+
+
+		return  (trPass);
+	}
+
+
+	// uczenie sieci
+	TcResult
+	tc03_learning()
+	{
+		LOG("u(i):  ");
+		vector<Input> u(sizeIn());
+		FOR_EACH(i, u.size(), \
+				 u[i]=2*(i+1);
+				LOG(u[i] << " "); );
+		LOG(endl);
+		LOG("v(i):  ");
+		vector<Input> v(sizeOut(), Input(1));
+		FOR_EACH(i, v.size(), \
+				LOG(v[i] << " "); );
+		LOG(endl<<endl);
+
+
+		unlearnedState();
+		y(u);
+
+
+		LOG(SEPLINE);
+		LOG( "mW(l,j,i):  " << endl );
+		for( Size l= 1 ; l<dynamic_cast<Net*>(this)->size() ; ++l ){
+			for( Size j= 0 ; j<sizeN(l) ; ++j ){
+				LOG( "(" << l << "," << j << ",i): ");
+				for( Size i= 0 ; i<=sizeN(l-1) ; ++i )
+					LOG( mW[ idxW(l,j,i) ] << " ");
+				LOG(endl);
+			}
+			LOG(endl);
+		}
+		LOG(endl);
+
+		LOG( "mA(l,j):  " << endl );
+		for( Size l= 1 ; l<dynamic_cast<Net*>(this)->size() ; ++l ){
+			LOG( "(" << l << ",j): ");
+			for( Size j= 0 ; j<sizeN(l) ; ++j ){
+				LOG( mA[ idxN(l,j) ] << " ");
+			}
+			LOG(endl);
+		}
+		LOG(SEPLINE);
+
+
+		example(u,v);
+//		FOR_EACH(i,50,example(u,v););
+		y(u);
+
+		LOG( "mW(l,j,i):  " << endl );
+		for( Size l= 1 ; l<dynamic_cast<Net*>(this)->size() ; ++l ){
+			for( Size j= 0 ; j<sizeN(l) ; ++j ){
+				LOG( "(" << l << "," << j << ",i): ");
+				for( Size i= 0 ; i<=sizeN(l-1) ; ++i )
+					LOG_ASSERT( mW[ idxW(l,j,i) ] << " ");
+				LOG(endl);
+			}
+			LOG(endl);
+		}
+		LOG(endl);
+
+		LOG( "mA(l,j):  " << endl );
+		for( Size l= 1 ; l<dynamic_cast<Net*>(this)->size() ; ++l ){
+			LOG( "(" << l << ",j): ");
+			for( Size j= 0 ; j<sizeN(l) ; ++j ){
+				LOG( mA[ idxN(l,j) ] << " ");
+			}
+			LOG(endl);
+		}
+		LOG(endl);
+
+		ASSERT("-0.7 1.6 0.6 2.2 -2.1 -0.6 -0.2 0.4 0.4 -2.2 ",
+			   "Wagi sieci zostaly blednie zmienione podczas nauki");
+
+		return  (trPass);
+	}
+
+};
+
+const Size TestGroupOperations::L= 3;
+const Size TestGroupOperations::tabL[L] = {1,2,2};
+const Fun TestGroupOperations::f[L-1] =  {  ident,   ident};
+const Dif TestGroupOperations::df[L-1] = {d_ident, d_ident};
+
 
 //*****************************************************************************
-
-
-
-
-/** wartosci wag */
-void printW()
-{
-	LOG_IO( LINE << "mW(l,j,i):\n");
-	for( Size l= 1 ; l<net.nN.size() ; ++l ){
-		for( Size j= 0 ; j<net.nN[l] ; ++j ){
-			LOG_IO( "(" << l << "," << j << ",i): ");
-			for( Size i= 0 ; i<=net.nN[l-1] ; ++i )
-				LOG_IO( net.mW[ net.idxW(l,j,i) ] << " ");
-			LOG_IO(endl);
-		}
-		LOG_IO(endl);
-	}
-}
-
-/** odpowiedz sieci */
-void a()
-{
-
-	Input tmpX[nIn]= {2.0,4.0};  // wejscie
-	vector<Input> x(tmpX,tmpX+nIn);
-
-	LOG_IO( LINE << "Odpowiedzi neuronow pierwszej warstwy:\n" );
-	LOG_IO("x:   ");
-	LOG_IO( (net.fLockBias==Net::lbLock ? 0 : 1) << " ");
-	FOR_EACH(i,x.size(),
-			 LOG_IO( x[i] << " "););
-	LOG_IO(endl);
-
-	vector<Input> out= net.a(x,1);
-	LOG_IO( "a:  ");
-	FOR_EACH(j, out.size(),\
-			 LOG_IO( out[j] << " " ););
-	LOG_IO(endl);
-}
-
-/** funkcje aktywacji */
-void testFun()
-{
-	LOG_IO( LINE << "funkcje aktywacji\n" );
-#define TEST_FUN(funk,poch,wart) \
-	LOG_IO( "x= " << wart << "  f(x)= " << (funk)(wart) << "  df(x)= " << (poch)(wart) << endl);
-
-	FOR_EACH(i,3,\
-			 TEST_FUN(f[i],df[i],0.0););
-}
-
-void printOdpowiedz()
-{
-	Input tmpX[nIn]= {2.0,4.0};  // wejscie
-	vector<Input> x(tmpX,tmpX+nIn);
-
-	LOG_IO( LINE << "Odpowiedz sieci\n" );
-	LOG_IO( "y(x) = " << net.y(x).front() << endl);
-}
-
-
-void learnState()
-{
-	LOG_IO( LINE << "LearningState\n" );
-	LOG_IO( "fLearningState= "
-			<< (net.fLearningState==Net::lsLearned ? "lsLearned" : "lsUnlearned")
-			<< endl );
-
-//	net.fLearningState= Net::lsLearned;
-	LOGD( net.learnedState() );
-	LOG_IO( "  turn learnedState()" << endl );
-	LOG_IO( "fLearningState= "
-			<< (net.fLearningState==Net::lsLearned ? "lsLearned" : "lsUnlearned")
-			<< endl );
-
-	LOGD( net.unlearnedState() );
-	LOG_IO( "  turn unlearnedState()" << endl );
-	LOG_IO( "fLearningState= "
-			<< (net.fLearningState==Net::lsLearned ? "lsLearned" : "lsUnlearned")
-			<< endl );
-}
-
-void printA()
-{
-	Input tmpX[nIn]= {2.0,4.0};  // wejscie
-	vector<Input> x(tmpX,tmpX+nIn);
-	net.y(x);
-
-	LOG_IO( LINE << "A:\n" );
-
-	LOG_IO("x:   ");
-	LOG_IO( (net.fLockBias==Net::lbLock ? 0 : 1) << " ");
-	FOR_EACH(i,x.size(),
-			 LOG_IO( x[i] << " "););
-	LOG_IO(endl);
-
-	LOG_IO( "nCumN(l):  ");
-	FOR_EACH(l,net.nCumN.size(),\
-			 LOG_IO( net.nCumN[l] << " " ));
-	LOG_IO(endl);
-
-	LOG_IO( "mA(l,j):\n");
-	for( Size l= 1 ; l<net.nN.size() ; ++l ){
-		LOG_IO( "(" << l << ",j): ");
-		for( Size j= 0 ; j<net.nN[l] ; ++j ){
-			LOG_IO( net.mA[ net.idxN(l,j) ] << " ");
-		}
-		LOG_IO(endl);
-	}
-
-}
-
-void error()
-{
-	Input tmpX[nIn]= {2.0,4.0};  // wejscie
-	vector<Input> u(tmpX,tmpX+nIn);
-	vector<Input> v(1,Input(1));
-	vector<Input> y= net.y(u);
-
-	LOG_IO( LINE << "Blad sieci" << endl );
-
-	LOG_IO("u:   ");
-	FOR_EACH(i,u.size(),
-			 LOG_IO( u[i] << " "););
-	LOG_IO(endl);
-
-	LOG_IO("v:   ");
-	FOR_EACH(i,v.size(),
-			 LOG_IO( v[i] << " "););
-	LOG_IO(endl);
-
-	LOG_IO("y:   ");
-	FOR_EACH(i,y.size(),
-			 LOG_IO( y[i] << " "););
-	LOG_IO(endl);
-
-	LOG_IO("err: " << net.e(u,v) << endl);
-}
-
-void learning()
-{
-	Input tmpX[nIn]= {2.0,4.0};  // wzorcowe wejscie
-	Input tmpV[] = {0.0};        // wzorcowe wyjscie
-	vector<Input> u(tmpX,tmpX+nIn);
-	vector<Input> v(tmpV, tmpV+1);
-	vector<Input> y_;
-
-	LOG_IO( LINE << "Uczenie sieci" << endl );
-
-	LOG_IO("u:   ");
-	FOR_EACH(i,u.size(),
-			 LOG_IO( u[i] << " "););
-	LOG_IO(endl);
-	LOG_IO("v:   ");
-	FOR_EACH(i,v.size(),
-			 LOG_IO( v[i] << " "););
-	LOG_IO(endl);
-
-	y_ = net.y(u);
-	LOG_IO("y(t=0): ");
-	FOR_EACH(i,y_.size(),
-			 LOG_IO( y_[i] << " "););
-	LOG_IO(endl);
-
-	FOR_EACH(i,10000,
-			 net.example(u,v););
-
-	y_ = net.y(u);
-	LOG_IO("y(t=10000): ");
-	FOR_EACH(i,y_.size(),
-			 LOG_IO( y_[i] << " "););
-	LOG_IO(endl);
-
-}
-
-
 //*****************************************************************************
 int main()
 {
@@ -381,22 +362,10 @@ int main()
 	tg1.run_group();
 
 
-//	printW();
-//	printA();
+	TestGroupOperations tg2;
 
-//	error();  // 0.289337
+	tg2.run_group();
 
-//	a();
-
-//	printOdpowiedz();
-
-//	testFun();
-
-//	learnState();
-
-//	printW();
-//	learning();
-//	printW();
 
 	return 0;
 }
