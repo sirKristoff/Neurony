@@ -39,8 +39,8 @@ Net::Net(const vector<Size>& N, LockBias lockBias)
 	nCumN = Net::calculateCumN(N);
 	nCumW = Net::calculateCumW(N);
 
-	mW = new Weight[ nCumW.back() ];
-	std::generate(&mW[0], &mW[nCumW.back()], my::rand);
+	mW = new Weight[sizeW()];
+	std::generate(&mW[0], &mW[sizeW()], my::rand);
 
 	this->unlearnedState();  // zarezerwuj pamiec dla mA
 
@@ -61,8 +61,8 @@ Net::Net(const vector<Size>& N , const vector<Fun> &fun, const vector<Dif> &dif,
 
 	nCumN = Net::calculateCumN(N);
 	nCumW = Net::calculateCumW(N);
-	mW = new Weight[ nCumW.back() ];
-	std::generate(&mW[0], &mW[nCumW.back()], my::rand);
+	mW = new Weight[sizeW()];
+	std::generate(&mW[0], &mW[sizeW()], my::rand);
 
 	this->unlearnedState();  // zarezerwuj pamiec dla mA
 
@@ -89,16 +89,16 @@ void
 Net::example( const vector<Input>& u, const vector<Input>& v )
 {
 #ifdef DEBUG
-	if( u.size() != nN[0] )
+	if( u.size() != sizeIn() )
 		throw range_error("Net::example(vector<Input>,vector<Input>): "
 						  "Rozmiar wzorcowego wejscia nie zgadza sie z wymiarem sieci");
-	if( v.size() != nN.back() )
+	if( v.size() != sizeOut() )
 		throw range_error("Net::example(vector<Input>,vector<Input>): "
 						  "Rozmiar wzorcowego wyjscia nie zgadza sie z wymiarem sieci");
 #endif
 
 	const Size L= nN.size()-1; // ilosc warstw sieci
-	vector<Input>  B( nCumN[L], Input(0) ); // wartosci b^l_j dla kazdego neuronu
+	vector<Input>  B( sizeN(), Input(0) ); // wartosci b^l_j dla kazdego neuronu
 
 	this->unlearnedState();  // wlaczamy nauke
 	vector<Input> y_ = this->y(u);  // obliczamy odpowiedzi neuronow
@@ -325,7 +325,7 @@ Net::unlearnedState()
 #endif
 
 	if( fLearningState == lsLearned ){
-		mA = new Input[ nCumN.back() ]; // skumulowana ilosc neuronow
+		mA = new Input[sizeN()]; // calkowita ilosc neuronow w sieci
 		fLearningState = lsUnlearned;
 	}
 }
@@ -347,7 +347,7 @@ Net::idxW( Size l, Size j, Size i )  const
 	if( l==0 || nN.size()<=l || nN[l]<=j || nN[l-1]<i )
 		throw domain_error("Net::idxW(Size,Size,Size): zly parametr metody");
 
-	if( nCumW.back() <= ( nCumW[l-1] + j*( nN[l-1]+1 ) + i ) )
+	if( sizeW() <= ( nCumW[l-1] + j*( nN[l-1]+1 ) + i ) )
 		throw out_of_range("Net::idxW(Size,Size,Size): zla wartosc zwracana");
 #endif
 

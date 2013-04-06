@@ -132,6 +132,35 @@ public:
 	void
 	unlearnedState();
 
+
+	/**
+	 * @brief  Ilosc neuronow w sieci
+	 */
+	Size
+	sizeN()  const
+	{  return  (nCumN.back());  }
+
+	/**
+	 * @brief  Ilosc wag neuronow w sieci
+	 */
+	Size
+	sizeW()  const
+	{  return  (nCumW.back());  }
+
+	/**
+	 * @brief  Rozmiar wejscia sieci
+	 */
+	Size
+	sizeIn()  const
+	{  return  (nN.front());  }
+
+	/**
+	 * @brief  Rozmiar wyjscia sieci
+	 */
+	Size
+	sizeOut()  const
+	{  return  (nN.back());  }
+
 //protected:
 
 	/**
@@ -168,8 +197,8 @@ public:
 	vector<Size>  nN;     /*!< Ilosci neuronow w kolejnych warstwach - L razem z warstwa zerowa*/
 	vector<Size>  nCumN;  /*!< Skumulowane ilosci neuronow we wszystkich poprzedzajacych warstwach */
 	vector<Size>  nCumW;  /*!< Sumy ilosci wag w neuronach kumulujac kolejne warstwy */
-	Weight*  mW;          /*!< Wagi calej sieci neuronowej (wagi z pierwszych warstw na poczatku */
-	Input*  mA;           /*!< Odpowiedzi wszystkich neuronow sieci */
+	Weight*       mW;     /*!< Wagi calej sieci neuronowej (wagi z pierwszych warstw na poczatku */
+	Input*        mA;     /*!< Odpowiedzi wszystkich neuronow sieci */
 	vector<Fun> mFun;     /*!< Funkcje aktywacji dla kazdej warstwy */
 	vector<Dif> mDif;     /*!< Pochodne funkcji aktywacji */
 
