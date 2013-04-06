@@ -21,6 +21,8 @@ using std::vector;
 
 #define  GLINE  "*******************************************************************************\n\n"
 #define  TCLINE "-------------------------------------------------------------------------------\n\n"
+#define  ERRLINE "\n- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n"
+#define  SEPLINE  "\n_________________________________________________\n\n"
 
 #define  REGISTER_TC( TestGroupClass, tcMethod )  { \
 	log() << "Adding new test case: "#tcMethod << std::endl; \
@@ -28,24 +30,40 @@ using std::vector;
 
 #define LOG( what )  { log() << what; }
 
-#define LOG_ASSERT( what ) { \
-	LOG( what ); \
+#define LOG_ASSERT( what ) {                                                   \
+	LOG( what );                                                               \
 	assertStream << what; }
 
-#define ASSERT( expected ) {   \
-	std::ostringstream reasStream;   \
-	std::ostringstream expStream;   \
-	expStream << (expected);   \
-	if( assertStream.str() != expStream.str() ){   \
-		reasStream << "Assertion failed  at line " << __LINE__;   \
-		reason(reasStream.str());   \
-		err() << reason() << std::endl   \
-			  << "received: \"" << assertStream.str() << "\"" << std::endl   \
-			  << "expected: \"" << expected << "\"" << std::endl;   \
-		return  (trFail);   \
-	}else{   \
-		log() << "Assertion ok at line " << __LINE__ << endl;   \
-	}   }
+#define ASSERT( expected, error_text ) {                                       \
+	ostringstream  reasStream,  expStream;                                     \
+	expStream << (expected);                                                   \
+	if( assertStream.str() != expStream.str() ){                               \
+		reasStream << __LINE__ << ": " <<  error_text;                         \
+		reason(reasStream.str());                                              \
+		err() << ERRLINE << reason() << endl                                   \
+			  << "Assertion failed" << endl                                    \
+			  << " received: \"" << assertStream.str() << "\"" << endl         \
+			  << " expected: \"" << expected << "\"" << ERRLINE;               \
+		return  (trFail);                                                      \
+	}                                                                          \
+	assertStream.str("");                                                      \
+}
+
+#define COMPAR( lhs, rhs, error_text ) {                                       \
+	ostringstream  lhsStream,  rhsStream,  reasStream;                         \
+	lhsStream << lhs;   rhsStream << rhs;                                      \
+	if( lhsStream.str()  !=  rhsStream.str() ){                                \
+		reasStream << __LINE__ << ": " <<  error_text;                         \
+		reason(reasStream.str());                                              \
+		err() << ERRLINE << reason() << endl                                   \
+			  << "Comparison failed" << endl                                   \
+			  << " left term:  \'" << #lhs << "\' = \""                        \
+			  << lhsStream.str() << "\"" << endl                               \
+			  << " right term: \'" << #rhs << "\' = \""                        \
+			  << rhsStream.str() << "\"" << ERRLINE;                           \
+	return  (trFail);                                                          \
+	}                                                                          \
+}
 
 //******************************************************************************
 /**
@@ -122,7 +140,7 @@ public:
 				err() << endl
 					  << TCLINE
 					  << "Test case FAILED!" << endl
-					  << "Reason is: \"" << reason() << endl << endl;
+					  << "Reason is: \"" << reason() << "\"" << endl << endl;
 			}
 
 			assertStream.str("");
