@@ -11,7 +11,9 @@ using namespace std;
 #include "net.h"
 
 
-Input Net::sNi= 0.1;
+Weight Net::sNi= 0.1;
+Weight Net::sMi= 0.3;
+
 
 namespace my{
 Weight rand()
@@ -33,7 +35,7 @@ Weight rand()
  * @param N  Ilosci neuronow w kolejnych warstwach
  */
 Net::Net(const vector<Size>& N, LockBias lockBias)
-	: nN(N), mA(NULL), mFun(N.size(), ::ident), mDif(N.size(), ::d_ident),
+	: nN(N), mDw(NULL), mA(NULL), mFun(N.size(), ::ident), mDif(N.size(), ::d_ident),
 	  fLockBias(lockBias), fLearningState(lsLearned)
 {
 	nCumN = Net::calculateCumN(N);
@@ -51,7 +53,7 @@ Net::Net(const vector<Size>& N, LockBias lockBias)
 //*** Net **********************************************************************
 Net::Net(const vector<Size>& N , const vector<Fun> &fun, const vector<Dif> &dif,
 		 LockBias lockBias)
-	: nN(N), mA(NULL), mFun(fun), mDif(dif), fLockBias(lockBias),
+	: nN(N), mDw(NULL), mA(NULL), mFun(fun), mDif(dif), fLockBias(lockBias),
 	  fLearningState(lsLearned)
 {
 #ifdef DEBUG
@@ -74,7 +76,7 @@ Net::Net(const vector<Size>& N , const vector<Fun> &fun, const vector<Dif> &dif,
 Net::~Net()
 {
 	delete[] mW;
-	this->learnedState();  // ewentualnie zwolni pamiec mA
+	this->learnedState();  // ewentualnie zwolni pamiec mA, mDw
 }
 
 
@@ -128,9 +130,9 @@ Net::example( const vector<Input>& u, const vector<Input>& v )
 
 	// korekcja wag
 	Input dB;
-	Input dW= 0;
 	vector<Input> in= u;
 	vector<Input> out;
+	Size iW;   // globalny indeks wagi
 
 	// TODO: zachowac wartosci dW
 
@@ -141,12 +143,16 @@ Net::example( const vector<Input>& u, const vector<Input>& v )
 		for( Size j= 0 ; j<sizeN(l) ; ++j ){  // kazdy neuron
 			dB= - Net::sNi * B[idxN(l,j)];  // b^l_j
 
-			dW = dB * X0;  // waga biasu
-			mW[idxW(l,j,0)] += dW;
+			iW = idxW(l,j,0);
+			/** @warning  zmiana flagi fLockBias w trakcie uczenia
+			 *            moze spowodowac niezdefiniowane zachowanie */
+			mDw[iW] =  dB * X0  +  Net::sMi * mDw[iW];  // zmiana wagi biasu
+			mW[idxW(l,j,0)] += mDw[iW];
 
 			for( Size i= 1 ; i<=sizeN(l-1) ; ++i ){  // kazda waga
-				dW =  dB * in[i-1];
-				mW[idxW(l,j,i)] += dW;
+				iW = idxW(l,j,i);
+				mDw[iW] =  dB * in[i-1]  +  Net::sMi * mDw[iW];
+				mW[idxW(l,j,i)] += mDw[iW];
 			}
 		}
 
@@ -310,13 +316,17 @@ Net::learnedState()
 #ifdef DEBUG
 	if( fLearningState == lsUnlearned  &&  mA == NULL )
 		throw logic_error("Net::learnedState(): siec nie nauczona a pamiec dla 'A' zwolniona!");
+	if( fLearningState == lsUnlearned  &&  mDw == NULL )
+		throw logic_error("Net::learnedState(): siec nie nauczona a pamiec dla 'Dw' zwolniona!");
 #endif
 
 	if( fLearningState == lsUnlearned ){
 		delete[] mA;
+		delete[] mDw;
 		fLearningState = lsLearned;
 #ifdef DEBUG
 		mA = NULL;
+		mDw = NULL;
 #endif
 	}
 }
@@ -331,10 +341,16 @@ Net::unlearnedState()
 		throw logic_error("Net::unlearnedState(): nie obliczono skumulowanej ilosci neuronow");
 	if( fLearningState == lsLearned  &&  mA != NULL )
 		throw logic_error("Net::unlearnedState(): siec nauczona a pamiec dla 'A' zarezerwowana!");
+	if( fLearningState == lsLearned  &&  mDw != NULL )
+		throw logic_error("Net::unlearnedState(): siec nauczona a pamiec dla 'Dw' zarezerwowana!");
 #endif
 
 	if( fLearningState == lsLearned ){
-		mA = new Input[sizeN()]; // calkowita ilosc neuronow w sieci
+		mA = new Input[sizeN()];    // dla kazdego neuronu jego odpowiedz
+		mDw = new Weight[sizeW()];  // dla kazdej wagi wartosc jej poprzedniej zmiany
+#ifdef DEBUG
+		std::fill( mDw, mDw+sizeW(), Weight(0) );
+#endif
 		fLearningState = lsUnlearned;
 	}
 }

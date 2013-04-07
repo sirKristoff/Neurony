@@ -187,6 +187,7 @@ public:
 		REGISTER_TC( TestGroupOperations, tc01_change_learningState );
 		REGISTER_TC( TestGroupOperations, tc02_response );
 		REGISTER_TC( TestGroupOperations, tc03_learning );
+		REGISTER_TC( TestGroupOperations, tc04_nth_learning );
 	}
 
 
@@ -343,6 +344,91 @@ public:
 		return  (trPass);
 	}
 
+
+	// wiele epok uczenia sieci
+		TcResult
+		tc04_nth_learning()
+		{
+			const size_t nth= 100;
+			mFun[1] = uni_sigm;
+			mDif[1] = d_uni_sigm;
+
+
+			LOG("u(i):  ");
+			vector<Input> u(sizeIn());
+			FOR_EACH(i, u.size(), \
+					 u[i]=2*(i+1);
+					LOG(u[i] << " "); );
+			LOG(endl);
+			LOG("v(i):  ");
+			vector<Input> v(sizeOut(), Input(1));
+			FOR_EACH(i, v.size(), \
+					LOG(v[i] << " "); );
+			LOG(endl<<endl);
+
+
+			unlearnedState();
+			y(u);
+
+
+			LOG(SEPLINE);
+			LOG( "mW(l,j,i):  " << endl );
+			for( Size l= 1 ; l<dynamic_cast<Net*>(this)->size() ; ++l ){
+				for( Size j= 0 ; j<sizeN(l) ; ++j ){
+					LOG( "(" << l << "," << j << ",i): ");
+					for( Size i= 0 ; i<=sizeN(l-1) ; ++i )
+						LOG( mW[ idxW(l,j,i) ] << " ");
+					LOG(endl);
+				}
+				LOG(endl);
+			}
+			LOG(endl);
+
+			LOG( "mA(l,j):  " << endl );
+			for( Size l= 1 ; l<dynamic_cast<Net*>(this)->size() ; ++l ){
+				LOG( "(" << l << ",j): ");
+				for( Size j= 0 ; j<sizeN(l) ; ++j ){
+					LOG( mA[ idxN(l,j) ] << " ");
+				}
+				LOG(endl);
+			}
+			LOG(SEPLINE);
+
+
+			FOR_EACH(i,nth,example(u,v););
+			LOG( "Po " << nth << " epokach" << endl << endl );
+			y(u);
+
+			LOG( "mW(l,j,i):  " << endl );
+			for( Size l= 1 ; l<dynamic_cast<Net*>(this)->size() ; ++l ){
+				for( Size j= 0 ; j<sizeN(l) ; ++j ){
+					LOG( "(" << l << "," << j << ",i): ");
+					for( Size i= 0 ; i<=sizeN(l-1) ; ++i )
+						LOG( mW[ idxW(l,j,i) ] << " ");
+					LOG(endl);
+				}
+				LOG(endl);
+			}
+			LOG(endl);
+
+			LOG( "mA(l,j):  " << endl );
+			for( Size l= 1 ; l<dynamic_cast<Net*>(this)->size() ; ++l ){
+				LOG( "(" << l << ",j): ");
+				for( Size j= 0 ; j<sizeN(l) ; ++j ){
+					if( l==dynamic_cast<Net*>(this)->size()-1 ){
+						LOG_ASSERT( mA[ idxN(l,j) ] << " ");
+					}else
+						LOG( mA[ idxN(l,j) ] << " ");
+				}
+				LOG(endl);
+			}
+			LOG(endl);
+
+			ASSERT("1 1 ",
+				   "Siec nie osiagnela oczekiwanej odpowiedzi");
+
+			return  (trPass);
+		}
 };
 
 const Size TestGroupOperations::L= 3;

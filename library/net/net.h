@@ -56,6 +56,8 @@ public:
 	 */
 	Net( const vector<Size>& N, const vector<Fun>& fun, const vector<Dif>& dif,
 		 LockBias lockBias= lbUnlock );
+
+	virtual
 	~Net();
 
 
@@ -221,6 +223,7 @@ public:
 	vector<Size>  nCumN;  /*!< Skumulowane ilosci neuronow we wszystkich poprzedzajacych warstwach */
 	vector<Size>  nCumW;  /*!< Sumy ilosci wag w neuronach kumulujac kolejne warstwy */
 	Weight*       mW;     /*!< Wagi calej sieci neuronowej (wagi z pierwszych warstw na poczatku */
+	Weight*       mDw;    /*!< Wartosci poprzedniej zmiany wag */
 	Input*        mA;     /*!< Odpowiedzi wszystkich neuronow sieci */
 	vector<Fun>   mFun;   /*!< Funkcje aktywacji dla kazdej warstwy */
 	vector<Dif>   mDif;   /*!< Pochodne funkcji aktywacji */
@@ -228,7 +231,8 @@ public:
 	LockBias fLockBias;   /*!< flaga zablokowana biasu: zablokowany ma wartosc zero i jego waga sie nie zmienia */
 	LearningState fLearningState;  /*!< flaga stanu uczenia sie sieci: nauczona siec nie zmienia swoich wag */
 
-	static Input sNi;
+	static Weight sNi;     /*!< Wspolczynnik szybkosci zmian wag - sNi C (0,1) */
+	static Weight sMi;     /*!< Wspolczynnik momentu - sMi C (0,1) */
 
 private:
 
