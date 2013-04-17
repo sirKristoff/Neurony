@@ -1,16 +1,26 @@
 /**
  * @file     getopt.h
  * @author   Krzysztof Lasota
- * @date     2013-04-14
- * @version  1.0
+ * @date     2013-04-17
+ * @version  2.0
  */
 
 #ifndef GETOPT_H
 #define GETOPT_H
 
 #include <ctype.h>
+#include <sstream>
 #include <string>
 #include <vector>
+
+
+template< typename T >
+std::istream&  extractValue( std::istream& stream, T& variable )
+{  return  stream >> variable;  }
+template<>
+std::istream&  extractValue<std::string>( std::istream& stream, std::string& variable )
+{  return  std::getline(stream, variable);  }
+
 
 
 /**
@@ -118,6 +128,62 @@ public:
 		}
 
 		return  ("");  // EXC: szukana flaga nie ma wartosci
+	}
+
+
+	/**
+	 * @brief   Przypisz wartosc powiazana z ktorakolwiek z flag
+	 * @param   variable  Zmienna do zapisania wartosci
+	 * @param   pattern   Wzorce flag do odnalezienia
+	 * @returns true   odnaleziono ktorykolwiek ze wzorcow
+	 * @returns false  nie odnaleziono zadnej flagi pasujacej do wzorca
+	 */
+	template< typename T >
+	bool
+	fetchValue( T& variable, std::string pattern )
+	{
+		std::vector<std::string> ptts;
+		std::stringstream sstr;
+
+		size_t pos;                  // pozycja separatora wzorcow
+		while( !pattern.empty() ){   // az wszystkie wzorce zostana odzseparowane
+			pos= pattern.find_last_of("|");      // gdzie jest ostatni separator
+			if( pos != std::string::npos ){      // sa conajmniej dwa wzorce
+				ptts.insert( ptts.begin(), pattern.substr(pos+1) );
+			}
+			else{                                      // ostatni wzorzec
+				ptts.insert( ptts.begin(), pattern );
+				pos = 0;
+			}
+			pattern.erase(pos);
+		}
+
+
+		FlagType ft= ftNone;
+		// szukaj pierwszego wzorca dla kturego sie cos znajdzie
+		for( size_t ip= 0 ; ip<ptts.size() ; ++ip ){
+			if( ptts[ip].find('=') != std::string::npos ){
+				ft = ftValued;  // szukamy wartosci flagi a nie tylko jej wystepowania
+				ptts[ip].erase( ptts[ip].end()-1 );
+			}
+
+			if( this->find(ptts[ip]) != 0 ){      // odnaleziono flage
+				if( ft & ftValued )
+					sstr << this->valueOf(ptts[ip]);
+				else
+					sstr << true;
+
+				extractValue(sstr, variable);        // przypisz wartosc flagi do 'variable'
+
+				// w przypadkach niejawnych konwersji (double->int) bedzie fail
+//				if( !sstr.fail() )
+					return  (true);
+//				else
+//					break;
+			}
+		}
+
+		return  (false);
 	}
 
 protected:

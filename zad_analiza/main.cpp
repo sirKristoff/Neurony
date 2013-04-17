@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 
 #include "../library/getopt/getopt.h"
 #include "../library/net/definitions.h"
@@ -18,8 +19,8 @@ using namespace std;
  *  -n VALUE,  --ni=VALUE   krok nauki bedzie wynosic VALUE  (domyslnie '0.1')
  *  -m VALUE,  --mi=VALUE   wartosc momentu bedzie wynosic VALUE  (domyslnie '0.1')
  *  -e NUM,  --epoch=NUM    wykonaj NUM epok w fazie uczenia  (domyslnie '1000')
- *  -b,  --bias             siec z biasem  (domyslnie ustawiony)
- *  --lock-bias             siec bez biasu  (opcjonalnie)
+ *  -b,  --bias             siec z biasem  (opcjonalnie)
+ *  --lock-bias             siec bez biasu  (domyslnie zablokowany)
  *  -o OUT,  --output=OUT   etykieta dla plikow wyjsciowych  (domyslnie 'output')
  *
  *
@@ -52,6 +53,13 @@ using namespace std;
 int main( int argc, char *argv[] )
 {
 	const GetOpt args( argc, argv );
+	bool bias__= false;
+	string namNetwork;
+	string namFunctions;
+	double ni__, mi__;
+	size_t epoch__= 1000;
+	string namOutput__= "output";
+
 
 
 
