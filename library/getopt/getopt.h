@@ -2,7 +2,7 @@
  * @file     getopt.h
  * @author   Krzysztof Lasota
  * @date     2013-04-17
- * @version  2.0
+ * @version  2.0 alfa
  */
 
 #ifndef GETOPT_H
@@ -140,7 +140,7 @@ public:
 	 */
 	template< typename T >
 	bool
-	fetchValue( T& variable, std::string pattern )
+	fetchValue( T& variable, std::string pattern )  const
 	{
 		std::vector<std::string> ptts;
 		std::stringstream sstr;
