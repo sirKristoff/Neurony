@@ -5,6 +5,7 @@ CONFIG -= qt
 
 CONFIG(debug, debug|release) {
 	DEFINES += DEBUG
+	DEFINES += LVL3
 }
 
 SOURCES += main.cpp \
